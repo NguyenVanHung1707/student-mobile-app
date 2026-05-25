@@ -1,17 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ActivityIndicator, 
-  useColorScheme, 
-  ScrollView, 
-  TouchableOpacity 
+import React, {useState, useEffect} from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ActivityIndicator,
+  useColorScheme,
+  ScrollView,
+  TouchableOpacity,
 } from 'react-native';
 import axios from 'axios';
-import { API_URL } from '@env';
+import {API_URL} from '@env';
 import Icon from 'react-native-vector-icons/FontAwesome';
-import { getData, getThemeColors } from './Utility';
+import {getData, getThemeColors} from './Utility';
 
 export default function GradesAnalytics() {
   const isDark = useColorScheme() === 'dark';
@@ -36,7 +36,7 @@ export default function GradesAnalytics() {
       }
 
       const response = await axios.get(`${API_URL}/analytics/student/summary`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: {Authorization: `Bearer ${token}`},
       });
       setData(response.data);
     } catch (err) {
@@ -49,9 +49,9 @@ export default function GradesAnalytics() {
 
   if (loading) {
     return (
-      <View style={[styles.center, { backgroundColor: colors.bg }]}>
+      <View style={[styles.center, {backgroundColor: colors.bg}]}>
         <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
+        <Text style={[styles.loadingText, {color: colors.textSecondary}]}>
           Đang tải phân tích học tập...
         </Text>
       </View>
@@ -60,91 +60,168 @@ export default function GradesAnalytics() {
 
   if (error || !data) {
     return (
-      <View style={[styles.center, { backgroundColor: colors.bg, padding: 20 }]}>
+      <View style={[styles.center, {backgroundColor: colors.bg, padding: 20}]}>
         <Icon name="exclamation-triangle" size={50} color="red" />
-        <Text style={[styles.errorText, { color: colors.text }]}>{error || 'Đã xảy ra lỗi'}</Text>
-        <TouchableOpacity style={[styles.retryBtn, { backgroundColor: colors.primary }]} onPress={fetchAnalytics}>
+        <Text style={[styles.errorText, {color: colors.text}]}>
+          {error || 'Đã xảy ra lỗi'}
+        </Text>
+        <TouchableOpacity
+          style={[styles.retryBtn, {backgroundColor: colors.primary}]}
+          onPress={fetchAnalytics}>
           <Text style={styles.retryBtnText}>Thử lại</Text>
         </TouchableOpacity>
       </View>
     );
   }
 
-  const { totalCourses, averageAttendance, totalAbsences, gpaProgress = [], absencesBreakdown = [] } = data;
+  const {
+    totalCourses,
+    averageAttendance,
+    totalAbsences,
+    gpaProgress = [],
+    absencesBreakdown = [],
+  } = data;
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.bg }]} contentContainerStyle={styles.content}>
+    <ScrollView
+      style={[styles.container, {backgroundColor: colors.bg}]}
+      contentContainerStyle={styles.content}>
       {/* Analytics Title */}
       <View style={styles.header}>
-        <Icon name="bar-chart" size={24} color={isDark ? '#38bdf8' : '#8A4C7D'} />
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Phân Tích Học Tập Cá Nhân</Text>
+        <Icon
+          name="bar-chart"
+          size={24}
+          color={isDark ? '#38bdf8' : '#8A4C7D'}
+        />
+        <Text style={[styles.headerTitle, {color: colors.text}]}>
+          Phân Tích Học Tập Cá Nhân
+        </Text>
       </View>
 
       {/* KPI Cards */}
       <View style={styles.kpiRow}>
-        <View style={[styles.kpiCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.kpiTitle, { color: colors.textSecondary }]}>Môn Học</Text>
-          <Text style={[styles.kpiValue, { color: colors.text }]}>{totalCourses}</Text>
+        <View
+          style={[
+            styles.kpiCard,
+            {backgroundColor: colors.card, borderColor: colors.border},
+          ]}>
+          <Text style={[styles.kpiTitle, {color: colors.textSecondary}]}>
+            Môn Học
+          </Text>
+          <Text style={[styles.kpiValue, {color: colors.text}]}>
+            {totalCourses}
+          </Text>
         </View>
-        <View style={[styles.kpiCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.kpiTitle, { color: colors.textSecondary }]}>Chuyên Cần</Text>
-          <Text style={[styles.kpiValue, { color: averageAttendance >= 80 ? 'green' : 'orange' }]}>
+        <View
+          style={[
+            styles.kpiCard,
+            {backgroundColor: colors.card, borderColor: colors.border},
+          ]}>
+          <Text style={[styles.kpiTitle, {color: colors.textSecondary}]}>
+            Chuyên Cần
+          </Text>
+          <Text
+            style={[
+              styles.kpiValue,
+              {color: averageAttendance >= 80 ? 'green' : 'orange'},
+            ]}>
             {averageAttendance}%
           </Text>
         </View>
-        <View style={[styles.kpiCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.kpiTitle, { color: colors.textSecondary }]}>Nghỉ Học</Text>
-          <Text style={[styles.kpiValue, { color: 'red' }]}>{totalAbsences}</Text>
+        <View
+          style={[
+            styles.kpiCard,
+            {backgroundColor: colors.card, borderColor: colors.border},
+          ]}>
+          <Text style={[styles.kpiTitle, {color: colors.textSecondary}]}>
+            Nghỉ Học
+          </Text>
+          <Text style={[styles.kpiValue, {color: 'red'}]}>{totalAbsences}</Text>
         </View>
       </View>
 
       {/* GPA Progress List */}
-      <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Tiến Trình Điểm Học Phần</Text>
+      <View
+        style={[
+          styles.section,
+          {backgroundColor: colors.card, borderColor: colors.border},
+        ]}>
+        <Text style={[styles.sectionTitle, {color: colors.text}]}>
+          Tiến Trình Điểm Học Phần
+        </Text>
         {gpaProgress.length > 0 ? (
           gpaProgress.map((item, idx) => (
-            <View key={idx} style={[styles.itemRow, { borderBottomColor: colors.border }]}>
+            <View
+              key={idx}
+              style={[styles.itemRow, {borderBottomColor: colors.border}]}>
               <View style={styles.itemLeft}>
-                <Text style={[styles.itemCode, { color: colors.primary }]}>{item.courseCode}</Text>
-                <Text style={[styles.itemName, { color: colors.text }]} numberOfLines={1}>
+                <Text style={[styles.itemCode, {color: colors.primary}]}>
+                  {item.courseCode}
+                </Text>
+                <Text
+                  style={[styles.itemName, {color: colors.text}]}
+                  numberOfLines={1}>
                   {item.subject}
                 </Text>
               </View>
               <View style={styles.itemRight}>
-                <Text style={[styles.itemGrade, { color: colors.text }]}>
+                <Text style={[styles.itemGrade, {color: colors.text}]}>
                   {item.averageGrade.toFixed(1)}
                 </Text>
-                <Text style={[styles.itemSub, { color: colors.textSecondary }]}>/10đ</Text>
+                <Text style={[styles.itemSub, {color: colors.textSecondary}]}>
+                  /10đ
+                </Text>
               </View>
             </View>
           ))
         ) : (
-          <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Chưa có dữ liệu điểm.</Text>
+          <Text style={[styles.emptyText, {color: colors.textSecondary}]}>
+            Chưa có dữ liệu điểm.
+          </Text>
         )}
       </View>
 
       {/* Absences Breakdown Bar List */}
-      <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Số Buổi Vắng Theo Tháng</Text>
+      <View
+        style={[
+          styles.section,
+          {backgroundColor: colors.card, borderColor: colors.border},
+        ]}>
+        <Text style={[styles.sectionTitle, {color: colors.text}]}>
+          Số Buổi Vắng Theo Tháng
+        </Text>
         {absencesBreakdown.length > 0 ? (
           absencesBreakdown.map((item, idx) => {
-            const maxAbs = Math.max(...absencesBreakdown.map(i => i.absences), 1);
+            const maxAbs = Math.max(
+              ...absencesBreakdown.map(i => i.absences),
+              1,
+            );
             const ratio = item.absences / maxAbs;
-            
+
             return (
               <View key={idx} style={styles.barContainer}>
                 <View style={styles.barTextRow}>
-                  <Text style={[styles.barLabel, { color: colors.text }]}>{item.month}</Text>
-                  <Text style={[styles.barValue, { color: 'red' }]}>{item.absences} buổi</Text>
+                  <Text style={[styles.barLabel, {color: colors.text}]}>
+                    {item.month}
+                  </Text>
+                  <Text style={[styles.barValue, {color: 'red'}]}>
+                    {item.absences} buổi
+                  </Text>
                 </View>
-                <View style={[styles.barBg, { backgroundColor: isDark ? '#334155' : '#E2E8F0' }]}>
-                  <View style={[styles.barFill, { width: `${ratio * 100}%` }]} />
+                <View
+                  style={[
+                    styles.barBg,
+                    {backgroundColor: isDark ? '#334155' : '#E2E8F0'},
+                  ]}>
+                  <View style={[styles.barFill, {width: `${ratio * 100}%`}]} />
                 </View>
               </View>
             );
           })
         ) : (
-          <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Không có buổi vắng nào.</Text>
+          <Text style={[styles.emptyText, {color: colors.textSecondary}]}>
+            Không có buổi vắng nào.
+          </Text>
         )}
       </View>
     </ScrollView>

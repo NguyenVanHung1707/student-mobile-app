@@ -1,6 +1,6 @@
 import React from 'react';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { createStackNavigator } from '@react-navigation/stack';
+import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
+import {createStackNavigator} from '@react-navigation/stack';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import ClassManagement from './ClassManagement';
 import HomePage from './HomePage';
@@ -19,9 +19,21 @@ const HomeScreen = () => {
 const ClassManagementStack = () => {
   return (
     <Stack.Navigator>
-      <Stack.Screen name="ClassManagement" component={ClassManagement} options={{ headerShown: false }} />
-      <Stack.Screen name="ClassDetail" component={ClassDetail} options={{ headerShown: false }} />
-      <Stack.Screen name="ClassDiscussion" component={ClassDiscussion} options={{ headerShown: false }} />
+      <Stack.Screen
+        name="ClassManagement"
+        component={ClassManagement}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name="ClassDetail"
+        component={ClassDetail}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name="ClassDiscussion"
+        component={ClassDiscussion}
+        options={{headerShown: false}}
+      />
     </Stack.Navigator>
   );
 };
@@ -29,8 +41,8 @@ const ClassManagementStack = () => {
 export default function MainPage() {
   return (
     <Tab.Navigator
-      screenOptions={({ route }) => ({
-        tabBarIcon: ({ focused, color, size }) => {
+      screenOptions={({route}) => ({
+        tabBarIcon: ({focused, color, size}) => {
           let iconName;
 
           if (route.name === 'Điểm danh') {
@@ -47,8 +59,7 @@ export default function MainPage() {
         },
         tabBarActiveTintColor: 'tomato',
         tabBarInactiveTintColor: 'gray',
-      })}
-    >
+      })}>
       <Tab.Screen name="Điểm danh" component={HomeScreen} />
       <Tab.Screen name="Lớp học của tôi" component={ClassManagementStack} />
       <Tab.Screen name="Kết quả học tập" component={GradesAndAttendance} />

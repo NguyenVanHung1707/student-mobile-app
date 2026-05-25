@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, FlatList, StyleSheet } from 'react-native';
+import React, {useState, useEffect, useCallback} from 'react';
+import {View, Text, FlatList, StyleSheet} from 'react-native';
 import axios from 'axios';
-import { API_URL } from '@env';
+import {API_URL} from '@env';
 import ClassCard from './ClassCard';
-import { getData } from './Utility';
-import { useFocusEffect } from '@react-navigation/native';
+import {getData} from './Utility';
+import {useFocusEffect} from '@react-navigation/native';
 
 export default function ClassManagement() {
   const [classes, setClasses] = useState([]);
@@ -15,15 +15,16 @@ export default function ClassManagement() {
       maxBodyLength: Infinity,
       url: `${API_URL}/student/get-my-course`,
       headers: {
-        'Authorization': 'Bearer ' + await getData('accessToken')
-      }
+        Authorization: 'Bearer ' + (await getData('accessToken')),
+      },
     };
-    axios.request(config)
-      .then((response) => {
+    axios
+      .request(config)
+      .then(response => {
         setClasses(response.data);
         console.log(response.data);
       })
-      .catch((error) => {
+      .catch(error => {
         console.error(error);
       });
   };
@@ -35,7 +36,7 @@ export default function ClassManagement() {
   useFocusEffect(
     useCallback(() => {
       fetchData();
-    }, [])
+    }, []),
   );
 
   return (
@@ -46,8 +47,8 @@ export default function ClassManagement() {
       <View style={styles.classList}>
         <FlatList
           data={classes}
-          renderItem={({ item }) => <ClassCard classInfo={item} />}
-          ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
+          renderItem={({item}) => <ClassCard classInfo={item} />}
+          ItemSeparatorComponent={() => <View style={{height: 10}} />}
         />
       </View>
     </>
@@ -57,19 +58,19 @@ export default function ClassManagement() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
     backgroundColor: '#ECF0F1',
   },
   text1: {
     fontSize: 24,
     fontWeight: 'bold',
-    position: 'absolute'
+    position: 'absolute',
   },
   classList: {
     flex: 10,
-    width: "100%",
-    padding: 15
+    width: '100%',
+    padding: 15,
   },
   activeBar: {
     backgroundColor: '#ECF0F1',

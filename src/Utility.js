@@ -10,7 +10,7 @@ export const storeData = async (key, value) => {
   }
 };
 
-export const getData = async (key) => {
+export const getData = async key => {
   try {
     const value = await AsyncStorage.getItem(key);
     if (value !== null) {
@@ -23,7 +23,7 @@ export const getData = async (key) => {
   }
 };
 
-export const convertTime = (isoDate) => {
+export const convertTime = isoDate => {
   // Đặt múi giờ
   const timezone = 'Asia/Ho_Chi_Minh'; // Múi giờ +07:00
   // Chuyển đổi định dạng
@@ -33,15 +33,15 @@ export const convertTime = (isoDate) => {
   return formattedDate;
 };
 
-export const formatToView = (dateString) => {
+export const formatToView = dateString => {
   return moment(dateString).format('HH:mm DD/MM/YYYY');
 };
 
-export const formatToDate = (dateString) => {
+export const formatToDate = dateString => {
   return moment(dateString).format('DD/MM/YYYY');
 };
 
-export const stringToDate = (dateString) => {
+export const stringToDate = dateString => {
   // Phân tích chuỗi để lấy ra ngày, tháng, năm
   const parts = dateString.split('/');
   const day = parseInt(parts[0], 10); // Lấy ngày
@@ -50,9 +50,9 @@ export const stringToDate = (dateString) => {
 
   // Tạo đối tượng Date từ ngày, tháng, năm
   return new Date(year, month, day);
-}
+};
 
-export const stringToTime = (timeString) => {
+export const stringToTime = timeString => {
   // Tạo một đối tượng Date với thời gian từ chuỗi
   const parts = timeString.split(':'); // Phân tách giờ và phút từ chuỗi
   const hours = parseInt(parts[0], 10); // Lấy giờ
@@ -63,9 +63,9 @@ export const stringToTime = (timeString) => {
   dateObject.setMinutes(minutes); // Đặt phút
 
   return dateObject;
-}
+};
 
-export const getThemeColors = (isDark) => {
+export const getThemeColors = isDark => {
   return {
     bg: isDark ? '#0f172a' : '#FEABAE',
     bgSecondary: isDark ? '#1e293b' : '#ECF0F1',

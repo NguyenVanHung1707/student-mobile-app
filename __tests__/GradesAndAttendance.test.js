@@ -1,36 +1,61 @@
 import React from 'react';
-import { render, fireEvent, act } from '@testing-library/react-native';
+import {render, fireEvent, act} from '@testing-library/react-native';
 import GradesAndAttendance from '../src/GradesAndAttendance';
 import axios from 'axios';
 
 describe('GradesAndAttendance Screen', () => {
   beforeEach(async () => {
     jest.clearAllMocks();
-    await require('@react-native-async-storage/async-storage').setItem('accessToken', 'fake-token');
+    await require('@react-native-async-storage/async-storage').setItem(
+      'accessToken',
+      'fake-token',
+    );
   });
 
   const mockCourses = [
-    { id: 1, courseCode: 'INT3306', subject: 'Phát triển ứng dụng Web' },
-    { id: 2, courseCode: 'INT3401', subject: 'Trí tuệ nhân tạo' }
+    {id: 1, courseCode: 'INT3306', subject: 'Phát triển ứng dụng Web'},
+    {id: 2, courseCode: 'INT3401', subject: 'Trí tuệ nhân tạo'},
   ];
 
   const mockAttendanceCourse1 = [
-    { id: 101, isAttendance: true, attendanceTime: '2026-05-20T08:00:00.000Z', lectureNumber: 1 },
-    { id: 102, isAttendance: false, attendanceTime: '2026-05-22T08:00:00.000Z', lectureNumber: 2 }
+    {
+      id: 101,
+      isAttendance: true,
+      attendanceTime: '2026-05-20T08:00:00.000Z',
+      lectureNumber: 1,
+    },
+    {
+      id: 102,
+      isAttendance: false,
+      attendanceTime: '2026-05-22T08:00:00.000Z',
+      lectureNumber: 2,
+    },
   ]; // 50% attendance, 1 absence
 
   const mockAttendanceCourse2 = [
-    { id: 201, isAttendance: true, attendanceTime: '2026-05-21T08:00:00.000Z', lectureNumber: 1 }
+    {
+      id: 201,
+      isAttendance: true,
+      attendanceTime: '2026-05-21T08:00:00.000Z',
+      lectureNumber: 1,
+    },
   ]; // 100% attendance, 0 absences
 
   const mockAssessmentsCourse1 = [
-    { id: 301, title: 'Bài tập 1', type: 'ASSIGNMENT', submissionStatus: 'GRADED', studentScore: 8, maxScore: 10 }
+    {
+      id: 301,
+      title: 'Bài tập 1',
+      type: 'ASSIGNMENT',
+      submissionStatus: 'GRADED',
+      studentScore: 8,
+      maxScore: 10,
+    },
   ];
 
   it('renders stats summary cards and empty state when no courses', async () => {
-    axios.get.mockImplementation(() => Promise.resolve({ data: [] }));
+    axios.get.mockImplementation(() => Promise.resolve({data: []}));
 
-    const { getByText } = render(<GradesAndAttendance />);
+    const {getByText} = render(<GradesAndAttendance />);
 
     // Wait for the async effect
     await act(async () => {
@@ -45,28 +70,28 @@ describe('GradesAndAttendance Screen', () => {
 
   it('fetches all data concurrently and renders overall metrics and courses list', async () => {
     // Smart timing-independent implementation
-    axios.get.mockImplementation((url) => {
+    axios.get.mockImplementation(url => {
       if (url.includes('/student/get-my-course')) {
-        return Promise.resolve({ data: mockCourses });
+        return Promise.resolve({data: mockCourses});
       }
       if (url.includes('/student/get-my-attendance-in-a-course')) {
         if (url.includes('courseId=1')) {
-          return Promise.resolve({ data: mockAttendanceCourse1 });
+          return Promise.resolve({data: mockAttendanceCourse1});
         }
         if (url.includes('courseId=2')) {
-          return Promise.resolve({ data: mockAttendanceCourse2 });
+          return Promise.resolve({data: mockAttendanceCourse2});
         }
       }
       if (url.includes('/assessments')) {
         if (url.includes('/courses/1/')) {
-          return Promise.resolve({ data: mockAssessmentsCourse1 });
+          return Promise.resolve({data: mockAssessmentsCourse1});
         }
-        return Promise.resolve({ data: [] });
+        return Promise.resolve({data: []});
       }
-      return Promise.resolve({ data: [] });
+      return Promise.resolve({data: []});
     });
 
-    const { getByText } = render(<GradesAndAttendance />);
+    const {getByText} = render(<GradesAndAttendance />);
 
     await act(async () => {
       await Promise.resolve();
@@ -87,28 +112,28 @@ describe('GradesAndAttendance Screen', () => {
   });
 
   it('toggles course accordion and switches tabs to view grades and absences', async () => {
-    axios.get.mockImplementation((url) => {
+    axios.get.mockImplementation(url => {
       if (url.includes('/student/get-my-course')) {
-        return Promise.resolve({ data: mockCourses });
+        return Promise.resolve({data: mockCourses});
       }
       if (url.includes('/student/get-my-attendance-in-a-course')) {
         if (url.includes('courseId=1')) {
-          return Promise.resolve({ data: mockAttendanceCourse1 });
+          return Promise.resolve({data: mockAttendanceCourse1});
         }
         if (url.includes('courseId=2')) {
-          return Promise.resolve({ data: mockAttendanceCourse2 });
+          return Promise.resolve({data: mockAttendanceCourse2});
         }
       }
       if (url.includes('/assessments')) {
         if (url.includes('/courses/1/')) {
-          return Promise.resolve({ data: mockAssessmentsCourse1 });
+          return Promise.resolve({data: mockAssessmentsCourse1});
         }
-        return Promise.resolve({ data: [] });
+        return Promise.resolve({data: []});
       }
-      return Promise.resolve({ data: [] });
+      return Promise.resolve({data: []});
     });
 
-    const { getByText, queryByText } = render(<GradesAndAttendance />);
+    const {getByText, queryByText} = render(<GradesAndAttendance />);
 
     await act(async () => {
       await Promise.resolve();

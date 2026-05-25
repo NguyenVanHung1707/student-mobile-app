@@ -1,32 +1,35 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  FlatList, 
-  TouchableOpacity, 
-  ActivityIndicator, 
-  TextInput, 
-  Alert, 
+import React, {useState, useEffect} from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  ActivityIndicator,
+  TextInput,
+  Alert,
   Linking,
   ToastAndroid,
   Platform,
-  ScrollView
+  ScrollView,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
-import { API_URL } from '@env';
+import {API_URL} from '@env';
 import axios from 'axios';
-import { getData } from './Utility';
-import { launchImageLibrary } from 'react-native-image-picker';
+import {getData} from './Utility';
+import {launchImageLibrary} from 'react-native-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export default function ClassDocuments({ classId }) {
+export default function ClassDocuments({classId}) {
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentFolder, setCurrentFolder] = useState(null); // { id, name }
   const [breadcrumbs, setBreadcrumbs] = useState([]); // Array of { id, name }
   const [searchQuery, setSearchQuery] = useState('');
-  const [permissions, setPermissions] = useState({ canUploadDocuments: false, canDownloadDocuments: false });
+  const [permissions, setPermissions] = useState({
+    canUploadDocuments: false,
+    canDownloadDocuments: false,
+  });
   const [uploading, setUploading] = useState(false);
   const [showOfflineOnly, setShowOfflineOnly] = useState(false);
   const [offlineDocuments, setOfflineDocuments] = useState([]);
@@ -57,13 +60,16 @@ export default function ClassDocuments({ classId }) {
   const fetchPermissions = async () => {
     try {
       const token = await getData('accessToken');
-      const response = await axios.get(`${API_URL}/documents/class/${classId}/my-permissions`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await axios.get(
+        `${API_URL}/documents/class/${classId}/my-permissions`,
+        {
+          headers: {Authorization: `Bearer ${token}`},
+        },
+      );
       if (response.data) {
         setPermissions({
           canUploadDocuments: response.data.canUploadDocuments,
-          canDownloadDocuments: response.data.canDownloadDocuments
+          canDownloadDocuments: response.data.canDownloadDocuments,
         });
       }
     } catch (error) {
@@ -79,9 +85,9 @@ export default function ClassDocuments({ classId }) {
       if (currentFolder) {
         url += `?parentFolderId=${currentFolder.id}`;
       }
-      
+
       const response = await axios.get(url, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: {Authorization: `Bearer ${token}`},
       });
       setDocuments(response.data || []);
     } catch (error) {
@@ -92,13 +98,13 @@ export default function ClassDocuments({ classId }) {
     }
   };
 
-  const handleFolderPress = (folder) => {
+  const handleFolderPress = folder => {
     const nextBreadcrumbs = [...breadcrumbs, folder];
     setBreadcrumbs(nextBreadcrumbs);
     setCurrentFolder(folder);
   };
 
-  const handleBreadcrumbPress = (index) => {
+  const handleBreadcrumbPress = index => {
     if (index === -1) {
       setBreadcrumbs([]);
       setCurrentFolder(null);
@@ -109,7 +115,7 @@ export default function ClassDocuments({ classId }) {
     }
   };
 
-  const showToast = (message) => {
+  const showToast = message => {
     if (Platform.OS === 'android') {
       ToastAndroid.show(message, ToastAndroid.SHORT);
     } else {
@@ -117,7 +123,7 @@ export default function ClassDocuments({ classId }) {
     }
   };
 
-  const handleDownload = async (doc) => {
+  const handleDownload = async doc => {
     if (!permissions.canDownloadDocuments) {
       showToast('Bạn chưa được cấp quyền tải tài liệu!');
       return;
@@ -126,53 +132,57 @@ export default function ClassDocuments({ classId }) {
     try {
       const token = await getData('accessToken');
       const downloadUrl = `${API_URL}/documents/download/${doc.id}`;
-      
-      // Prompt user about download
-      Alert.alert(
-        'Tải tài liệu',
-        `Bạn có muốn tải xuống "${doc.name}"?`,
-        [
-          { text: 'Hủy', style: 'cancel' },
-          { 
-            text: 'Tải xuống', 
-            onPress: async () => {
-              showToast('Đang bắt đầu tải xuống...');
-              // To handle actual file downloading correctly under JWT protection in React Native
-              // without relying on native compilation modules that may break builds,
-              // we can fetch the file data as blob, and in a real Android production build,
-              // we would stream it into Downloads.
-              // Here, we provide an elegant web fallback URL or fetch streaming
-              try {
-                // If they want to download in background, we open the web link or call DownloadManager
-                // For a secured REST API, we can trigger an explicit fetch download and alert user of completion
-                const res = await axios.get(downloadUrl, {
-                  headers: { Authorization: `Bearer ${token}` },
-                  responseType: 'blob'
-                });
-                
-                // Cache info to AsyncStorage for offline viewing
-                const offlineKey = `offline_docs_class_${classId}`;
-                const existingOffline = await AsyncStorage.getItem(offlineKey);
-                let offlineList = existingOffline ? JSON.parse(existingOffline) : [];
-                if (!offlineList.some(d => d.id === doc.id)) {
-                  offlineList.push({
-                    ...doc,
-                    downloadedAt: new Date().toLocaleDateString('vi-VN'),
-                    isOfflineCached: true
-                  });
-                  await AsyncStorage.setItem(offlineKey, JSON.stringify(offlineList));
-                  loadOfflineDocs();
-                }
 
-                showToast(`Tải xuống "${doc.name}" thành công!`);
-              } catch (err) {
-                console.log('Download error:', err);
-                Alert.alert('Thành công', `Tệp "${doc.name}" đã được lưu offline thành công.`);
+      // Prompt user about download
+      Alert.alert('Tải tài liệu', `Bạn có muốn tải xuống "${doc.name}"?`, [
+        {text: 'Hủy', style: 'cancel'},
+        {
+          text: 'Tải xuống',
+          onPress: async () => {
+            showToast('Đang bắt đầu tải xuống...');
+            // To handle actual file downloading correctly under JWT protection in React Native
+            // without relying on native compilation modules that may break builds,
+            // we can fetch the file data as blob, and in a real Android production build,
+            // we would stream it into Downloads.
+            // Here, we provide an elegant web fallback URL or fetch streaming
+            try {
+              // If they want to download in background, we open the web link or call DownloadManager
+              // For a secured REST API, we can trigger an explicit fetch download and alert user of completion
+              const res = await axios.get(downloadUrl, {
+                headers: {Authorization: `Bearer ${token}`},
+                responseType: 'blob',
+              });
+
+              // Cache info to AsyncStorage for offline viewing
+              const offlineKey = `offline_docs_class_${classId}`;
+              const existingOffline = await AsyncStorage.getItem(offlineKey);
+              let offlineList = existingOffline
+                ? JSON.parse(existingOffline)
+                : [];
+              if (!offlineList.some(d => d.id === doc.id)) {
+                offlineList.push({
+                  ...doc,
+                  downloadedAt: new Date().toLocaleDateString('vi-VN'),
+                  isOfflineCached: true,
+                });
+                await AsyncStorage.setItem(
+                  offlineKey,
+                  JSON.stringify(offlineList),
+                );
+                loadOfflineDocs();
               }
-            } 
-          }
-        ]
-      );
+
+              showToast(`Tải xuống "${doc.name}" thành công!`);
+            } catch (err) {
+              console.log('Download error:', err);
+              Alert.alert(
+                'Thành công',
+                `Tệp "${doc.name}" đã được lưu offline thành công.`,
+              );
+            }
+          },
+        },
+      ]);
     } catch (error) {
       console.log('Download check error:', error);
     }
@@ -185,19 +195,35 @@ export default function ClassDocuments({ classId }) {
     }
 
     // Pick a file/image to upload
-    launchImageLibrary({ mediaType: 'mixed' }, async (response) => {
+    launchImageLibrary({mediaType: 'mixed'}, async response => {
       if (response.didCancel) {
         console.log('User cancelled picker');
       } else if (response.errorCode) {
         console.error('Picker error:', response.errorCode);
       } else if (response.assets && response.assets.length > 0) {
         const file = response.assets[0];
-        
+
         // Validation extensions
-        const blockedExtensions = ['exe', 'msi', 'sh', 'bat', 'cmd', 'js', 'vbs', 'jar', 'com', 'scr', 'apk', 'bin'];
+        const blockedExtensions = [
+          'exe',
+          'msi',
+          'sh',
+          'bat',
+          'cmd',
+          'js',
+          'vbs',
+          'jar',
+          'com',
+          'scr',
+          'apk',
+          'bin',
+        ];
         const ext = file.fileName?.split('.').pop()?.toLowerCase() || '';
         if (blockedExtensions.includes(ext)) {
-          Alert.alert('Không hợp lệ', 'Hệ thống không cho phép tải lên các tệp tin thực thi nguy hiểm (.exe, .sh...)');
+          Alert.alert(
+            'Không hợp lệ',
+            'Hệ thống không cho phép tải lên các tệp tin thực thi nguy hiểm (.exe, .sh...)',
+          );
           return;
         }
 
@@ -212,14 +238,14 @@ export default function ClassDocuments({ classId }) {
           formData.append('file', {
             uri: file.uri,
             name: file.fileName || 'upload.jpg',
-            type: file.type || 'image/jpeg'
+            type: file.type || 'image/jpeg',
           });
 
           await axios.post(`${API_URL}/documents/upload`, formData, {
             headers: {
               'Content-Type': 'multipart/form-data',
-              Authorization: `Bearer ${token}`
-            }
+              Authorization: `Bearer ${token}`,
+            },
           });
 
           showToast('Tải lên tài liệu thành công!');
@@ -236,20 +262,26 @@ export default function ClassDocuments({ classId }) {
 
   const getIconAndColor = (type, extension) => {
     if (type === 'FOLDER') {
-      return { icon: 'folder', color: '#F39C12' }; // Amber
+      return {icon: 'folder', color: '#F39C12'}; // Amber
     }
     const ext = extension?.toLowerCase() || '';
-    if (['pdf'].includes(ext)) return { icon: 'file-pdf-o', color: '#E74C3C' }; // Red
-    if (['doc', 'docx'].includes(ext)) return { icon: 'file-word-o', color: '#3498DB' }; // Blue
-    if (['xls', 'xlsx', 'csv'].includes(ext)) return { icon: 'file-excel-o', color: '#2ECC71' }; // Green
-    if (['ppt', 'pptx'].includes(ext)) return { icon: 'file-powerpoint-o', color: '#E67E22' }; // Orange
-    if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) return { icon: 'file-image-o', color: '#1ABC9C' }; // Turquoise
-    if (['mp4', 'mkv', 'avi', 'mov'].includes(ext)) return { icon: 'file-video-o', color: '#9B59B6' }; // Purple
-    if (['zip', 'rar', '7z'].includes(ext)) return { icon: 'file-zip-o', color: '#D35400' };
-    return { icon: 'file-o', color: '#7F8C8D' }; // Gray
+    if (['pdf'].includes(ext)) return {icon: 'file-pdf-o', color: '#E74C3C'}; // Red
+    if (['doc', 'docx'].includes(ext))
+      return {icon: 'file-word-o', color: '#3498DB'}; // Blue
+    if (['xls', 'xlsx', 'csv'].includes(ext))
+      return {icon: 'file-excel-o', color: '#2ECC71'}; // Green
+    if (['ppt', 'pptx'].includes(ext))
+      return {icon: 'file-powerpoint-o', color: '#E67E22'}; // Orange
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext))
+      return {icon: 'file-image-o', color: '#1ABC9C'}; // Turquoise
+    if (['mp4', 'mkv', 'avi', 'mov'].includes(ext))
+      return {icon: 'file-video-o', color: '#9B59B6'}; // Purple
+    if (['zip', 'rar', '7z'].includes(ext))
+      return {icon: 'file-zip-o', color: '#D35400'};
+    return {icon: 'file-o', color: '#7F8C8D'}; // Gray
   };
 
-  const formatBytes = (bytes) => {
+  const formatBytes = bytes => {
     if (bytes === 0) return '0 Bytes';
     if (!bytes) return '';
     const k = 1024;
@@ -259,45 +291,70 @@ export default function ClassDocuments({ classId }) {
   };
 
   const filteredDocs = showOfflineOnly
-    ? offlineDocuments.filter(doc => doc.name.toLowerCase().includes(searchQuery.toLowerCase()))
-    : documents.filter(doc => doc.name.toLowerCase().includes(searchQuery.toLowerCase()));
+    ? offlineDocuments.filter(doc =>
+        doc.name.toLowerCase().includes(searchQuery.toLowerCase()),
+      )
+    : documents.filter(doc =>
+        doc.name.toLowerCase().includes(searchQuery.toLowerCase()),
+      );
 
-  const renderItem = ({ item }) => {
+  const renderItem = ({item}) => {
     const meta = getIconAndColor(item.type, item.fileExtension);
     const isFolder = item.type === 'FOLDER';
 
     return (
-      <TouchableOpacity 
-        style={styles.docItem} 
-        onPress={() => isFolder ? handleFolderPress(item) : handleDownload(item)}
-        activeOpacity={0.7}
-      >
+      <TouchableOpacity
+        style={styles.docItem}
+        onPress={() =>
+          isFolder ? handleFolderPress(item) : handleDownload(item)
+        }
+        activeOpacity={0.7}>
         <View style={styles.leftContainer}>
-          <Icon name={meta.icon} size={28} color={meta.color} style={styles.docIcon} />
+          <Icon
+            name={meta.icon}
+            size={28}
+            color={meta.color}
+            style={styles.docIcon}
+          />
           <View style={styles.textContainer}>
-            <Text style={styles.docName} numberOfLines={1}>{item.name}</Text>
+            <Text style={styles.docName} numberOfLines={1}>
+              {item.name}
+            </Text>
             <Text style={styles.docDetails}>
-              {isFolder ? 'Thư mục' : `${formatBytes(item.fileSize)} • bởi ${item.uploaderName || 'Hệ thống'}`}
+              {isFolder
+                ? 'Thư mục'
+                : `${formatBytes(item.fileSize)} • bởi ${
+                    item.uploaderName || 'Hệ thống'
+                  }`}
             </Text>
           </View>
         </View>
-        
+
         <View style={styles.rightContainer}>
           {isFolder ? (
             <Icon name="chevron-right" size={14} color="#BDC3C7" />
           ) : (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <View style={{flexDirection: 'row', alignItems: 'center', gap: 6}}>
               {offlineDocuments.some(od => od.id === item.id) && (
                 <View style={styles.offlineBadge}>
                   <Icon name="check-circle" size={10} color="#2ECC71" />
                   <Text style={styles.offlineBadgeText}>Offline</Text>
                 </View>
               )}
-              <TouchableOpacity 
-                style={[styles.downloadBtn, !permissions.canDownloadDocuments && styles.disabledDownloadBtn]}
-                onPress={() => handleDownload(item)}
-              >
-                <Icon name="download" size={14} color={permissions.canDownloadDocuments ? '#3498DB' : '#BDC3C7'} />
+              <TouchableOpacity
+                style={[
+                  styles.downloadBtn,
+                  !permissions.canDownloadDocuments &&
+                    styles.disabledDownloadBtn,
+                ]}
+                onPress={() => handleDownload(item)}>
+                <Icon
+                  name="download"
+                  size={14}
+                  color={
+                    permissions.canDownloadDocuments ? '#3498DB' : '#BDC3C7'
+                  }
+                />
               </TouchableOpacity>
             </View>
           )}
@@ -310,29 +367,52 @@ export default function ClassDocuments({ classId }) {
     <View style={styles.container}>
       {/* Switcher Tab Bar */}
       <View style={styles.topTabContainer}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.topTabBtn, !showOfflineOnly && styles.activeTopTabBtn]}
-          onPress={() => setShowOfflineOnly(false)}
-        >
-          <Icon name="cloud" size={12} color={!showOfflineOnly ? '#ffffff' : '#7F8C8D'} />
-          <Text style={[styles.topTabBtnText, !showOfflineOnly && styles.activeTopTabBtnText]}>Trực tuyến</Text>
+          onPress={() => setShowOfflineOnly(false)}>
+          <Icon
+            name="cloud"
+            size={12}
+            color={!showOfflineOnly ? '#ffffff' : '#7F8C8D'}
+          />
+          <Text
+            style={[
+              styles.topTabBtnText,
+              !showOfflineOnly && styles.activeTopTabBtnText,
+            ]}>
+            Trực tuyến
+          </Text>
         </TouchableOpacity>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.topTabBtn, showOfflineOnly && styles.activeTopTabBtn]}
           onPress={() => {
             loadOfflineDocs();
             setShowOfflineOnly(true);
-          }}
-        >
-          <Icon name="check-circle" size={12} color={showOfflineOnly ? '#ffffff' : '#7F8C8D'} />
-          <Text style={[styles.topTabBtnText, showOfflineOnly && styles.activeTopTabBtnText]}>Lưu ngoại tuyến</Text>
+          }}>
+          <Icon
+            name="check-circle"
+            size={12}
+            color={showOfflineOnly ? '#ffffff' : '#7F8C8D'}
+          />
+          <Text
+            style={[
+              styles.topTabBtnText,
+              showOfflineOnly && styles.activeTopTabBtnText,
+            ]}>
+            Lưu ngoại tuyến
+          </Text>
         </TouchableOpacity>
       </View>
 
       {/* Search and Upload Bar */}
       <View style={styles.searchBarContainer}>
         <View style={styles.searchBox}>
-          <Icon name="search" size={14} color="#7F8C8D" style={styles.searchIcon} />
+          <Icon
+            name="search"
+            size={14}
+            color="#7F8C8D"
+            style={styles.searchIcon}
+          />
           <TextInput
             placeholder="Tìm tài liệu..."
             placeholderTextColor="#95A5A6"
@@ -341,14 +421,22 @@ export default function ClassDocuments({ classId }) {
             style={styles.searchInput}
           />
         </View>
-        
+
         {permissions.canUploadDocuments && (
-          <TouchableOpacity style={styles.uploadBtn} onPress={handleUpload} disabled={uploading}>
+          <TouchableOpacity
+            style={styles.uploadBtn}
+            onPress={handleUpload}
+            disabled={uploading}>
             {uploading ? (
               <ActivityIndicator size="small" color="#FFF" />
             ) : (
               <>
-                <Icon name="upload" size={14} color="#FFF" style={{ marginRight: 6 }} />
+                <Icon
+                  name="upload"
+                  size={14}
+                  color="#FFF"
+                  style={{marginRight: 6}}
+                />
                 <Text style={styles.uploadBtnText}>Tải lên</Text>
               </>
             )}
@@ -358,19 +446,34 @@ export default function ClassDocuments({ classId }) {
 
       {/* Breadcrumb Trail */}
       <View style={styles.breadcrumbContainer}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.breadcrumbScroll}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.breadcrumbScroll}>
           <TouchableOpacity onPress={() => handleBreadcrumbPress(-1)}>
-            <Text style={[styles.breadcrumbText, !currentFolder && styles.activeBreadcrumb]}>Tài liệu</Text>
+            <Text
+              style={[
+                styles.breadcrumbText,
+                !currentFolder && styles.activeBreadcrumb,
+              ]}>
+              Tài liệu
+            </Text>
           </TouchableOpacity>
-          
+
           {breadcrumbs.map((crumb, idx) => (
             <React.Fragment key={crumb.id}>
-              <Icon name="chevron-right" size={10} color="#BDC3C7" style={styles.breadcrumbSeparator} />
+              <Icon
+                name="chevron-right"
+                size={10}
+                color="#BDC3C7"
+                style={styles.breadcrumbSeparator}
+              />
               <TouchableOpacity onPress={() => handleBreadcrumbPress(idx)}>
-                <Text style={[
-                  styles.breadcrumbText, 
-                  idx === breadcrumbs.length - 1 && styles.activeBreadcrumb
-                ]}>
+                <Text
+                  style={[
+                    styles.breadcrumbText,
+                    idx === breadcrumbs.length - 1 && styles.activeBreadcrumb,
+                  ]}>
                   {crumb.name}
                 </Text>
               </TouchableOpacity>
@@ -387,9 +490,15 @@ export default function ClassDocuments({ classId }) {
         </View>
       ) : filteredDocs.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Icon name={searchQuery ? "search" : "folder-open-o"} size={48} color="#BDC3C7" />
+          <Icon
+            name={searchQuery ? 'search' : 'folder-open-o'}
+            size={48}
+            color="#BDC3C7"
+          />
           <Text style={styles.emptyText}>
-            {searchQuery ? 'Không tìm thấy tài liệu phù hợp.' : 'Thư mục này hiện chưa có tài liệu nào.'}
+            {searchQuery
+              ? 'Không tìm thấy tài liệu phù hợp.'
+              : 'Thư mục này hiện chưa có tài liệu nào.'}
           </Text>
         </View>
       ) : (
@@ -594,5 +703,5 @@ const styles = StyleSheet.create({
     fontSize: 9,
     fontWeight: 'bold',
     color: '#16A085',
-  }
+  },
 });

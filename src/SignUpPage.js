@@ -1,9 +1,20 @@
-import React, { useEffect, useState } from 'react';
-import { TextInput, TouchableOpacity, View, Text, StyleSheet, Alert } from 'react-native';
-import { HOST, API_URL } from '@env'; // Ensure you have this environment variable configured
-import { getData, storeData } from './Utility';
+import React, {useEffect, useState} from 'react';
+import {
+  TextInput,
+  TouchableOpacity,
+  View,
+  Text,
+  StyleSheet,
+  Alert,
+} from 'react-native';
+import {getData, storeData} from './Utility';
+import {
+  API_BASE_URL,
+  KEYCLOAK_CLIENT_ID,
+  KEYCLOAK_TOKEN_ENDPOINT,
+} from './config';
 
-export default function SignUpPage({ navigation }) {
+export default function SignUpPage({navigation}) {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [firstName, setFirstName] = useState('');
@@ -15,84 +26,90 @@ export default function SignUpPage({ navigation }) {
   useEffect(() => {
     //get anonymous token
     const myHeaders = new Headers();
-    myHeaders.append("Content-Type", "application/x-www-form-urlencoded");
+    myHeaders.append('Content-Type', 'application/x-www-form-urlencoded');
 
-    const client_id = "graduation_thesis_ver2";
-    const client_secret = "Tj5zNU17UX9Ak1d4lLulx9VcXSSdHJwC";
-    const urlencoded = `grant_type=password&client_id=${client_id}&client_secret=${client_secret}&username=anonymous&password=anonymous`;
+    const urlencoded = new URLSearchParams({
+      grant_type: 'password',
+      client_id: KEYCLOAK_CLIENT_ID,
+      username: 'anonymous',
+      password: 'anonymous',
+    }).toString();
 
     const requestOptions = {
-      method: "POST",
+      method: 'POST',
       headers: myHeaders,
       body: urlencoded,
-      redirect: "follow"
+      redirect: 'follow',
     };
 
-    fetch(`${HOST}:9000/realms/hung2004/protocol/openid-connect/token`, requestOptions)
-      .then((response) => response.json())
-      .then(async (result) => {
+    fetch(KEYCLOAK_TOKEN_ENDPOINT, requestOptions)
+      .then(response => response.json())
+      .then(async result => {
         await storeData('anonymousToken', result.access_token);
       })
-      .catch((error) => console.error('Error:', error));
+      .catch(error => console.error('Error:', error));
   }, []);
 
   const signUp = async () => {
     if (password !== confirmPassword) {
-      console.error("Passwords do not match");
+      console.error('Passwords do not match');
       return;
     }
     //check null
     if (!username || !email || !firstName || !lastName || !msgv || !password) {
-      console.error("Please fill in all fields");
+      console.error('Please fill in all fields');
       return;
     }
 
     const myHeaders = new Headers();
-    myHeaders.append("Content-Type", "application/json");
-    myHeaders.append("Authorization", "Bearer " + await getData('anonymousToken'));
+    myHeaders.append('Content-Type', 'application/json');
+    myHeaders.append(
+      'Authorization',
+      'Bearer ' + (await getData('anonymousToken')),
+    );
     console.log(myHeaders);
 
     const raw = JSON.stringify({
-      "username": username,
-      "email": email,
-      "firstName": firstName,
-      "lastName": lastName,
-      "password": password,
-      "studentCode": msgv
+      username: username,
+      email: email,
+      firstName: firstName,
+      lastName: lastName,
+      password: password,
+      studentCode: msgv,
     });
 
     const requestOptions = {
-      method: "POST",
+      method: 'POST',
       headers: myHeaders,
       body: raw,
-      redirect: "follow"
+      redirect: 'follow',
     };
 
-    fetch(`${API_URL}/anonymous/sign-up-student`, requestOptions)
-      .then((response) => {
+    fetch(`${API_BASE_URL}/anonymous/sign-up-student`, requestOptions)
+      .then(response => {
         response.text();
         console.log(response.status);
         if (response.status === 500) {
-          console.error("Sign up failed because email or username already exists");
-          Alert.alert("Sign up failed because email or username already exists");
+          console.error(
+            'Sign up failed because email or username already exists',
+          );
+          Alert.alert(
+            'Sign up failed because email or username already exists',
+          );
           return;
         }
         //ask user to do you want to login now
-        Alert.alert(
-          "Sign up successful",
-          "Do you want to login now?",
-          [
-            {
-              text: "No",
-              onPress: () => console.log("No Pressed"),
-              style: "cancel"
-            },
-            { text: "Yes", onPress: () => navigation.navigate('Login') }
-          ]
-        );
+        Alert.alert('Sign up successful', 'Do you want to login now?', [
+          {
+            text: 'No',
+            onPress: () => console.log('No Pressed'),
+            style: 'cancel',
+          },
+          {text: 'Yes', onPress: () => navigation.navigate('Login')},
+        ]);
       })
-      .then((result) => console.log(result))
-      .catch((error) => console.error(error));
+      .then(result => console.log(result))
+      .catch(error => console.error(error));
     console.log('Sign up successful');
   };
 
@@ -106,25 +123,47 @@ export default function SignUpPage({ navigation }) {
         <Text style={styles.logoText}>Sign Up</Text>
       </View>
       <View style={styles.signUpZone}>
-        <TextInput style={styles.textInput} placeholder="Tên đăng nhập" onChangeText={(val) => setUsername(val)} />
-        <TextInput style={styles.textInput} placeholder="Email" onChangeText={(val) => setEmail(val)} />
+        <TextInput
+          style={styles.textInput}
+          placeholder="Tên đăng nhập"
+          onChangeText={val => setUsername(val)}
+        />
+        <TextInput
+          style={styles.textInput}
+          placeholder="Email"
+          onChangeText={val => setEmail(val)}
+        />
 
         <View style={styles.nameContainer}>
           <TextInput
             style={[styles.textInput, styles.nameInput]}
             placeholder="Họ"
-            onChangeText={(val) => setLastName(val)}
+            onChangeText={val => setLastName(val)}
           />
           <TextInput
             style={[styles.textInput, styles.nameInput]}
             placeholder="Tên"
-            onChangeText={(val) => setFirstName(val)}
+            onChangeText={val => setFirstName(val)}
           />
         </View>
 
-        <TextInput style={styles.textInput} placeholder="MSSV" onChangeText={(val) => setMsgv(val)} />
-        <TextInput style={styles.textInput} placeholder="Password" secureTextEntry={true} onChangeText={(val) => setPassword(val)} />
-        <TextInput style={styles.textInput} placeholder="Confirm Password" secureTextEntry={true} onChangeText={(val) => setConfirmPassword(val)} />
+        <TextInput
+          style={styles.textInput}
+          placeholder="MSSV"
+          onChangeText={val => setMsgv(val)}
+        />
+        <TextInput
+          style={styles.textInput}
+          placeholder="Password"
+          secureTextEntry={true}
+          onChangeText={val => setPassword(val)}
+        />
+        <TextInput
+          style={styles.textInput}
+          placeholder="Confirm Password"
+          secureTextEntry={true}
+          onChangeText={val => setConfirmPassword(val)}
+        />
 
         <TouchableOpacity style={styles.signUpButton} onPress={signUp}>
           <Text style={styles.signUpButtonText}>Sign Up</Text>
@@ -141,23 +180,23 @@ export default function SignUpPage({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FEABAE",
-    alignItems: "center",
-    justifyContent: "center",
+    backgroundColor: '#FEABAE',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   logoZone: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   logoText: {
-    color: "#FFFFFF",
+    color: '#FFFFFF',
     fontSize: 50,
-    fontWeight: "bold",
+    fontWeight: 'bold',
   },
   signUpZone: {
     flex: 4,
-    justifyContent: "center",
+    justifyContent: 'center',
     width: '80%',
   },
   textInput: {
@@ -201,5 +240,5 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 18,
     fontWeight: 'bold',
-  }
+  },
 });

@@ -1,15 +1,24 @@
-import { FlatList, Text, View, StyleSheet, TouchableOpacity, Modal, ScrollView, ActivityIndicator, Alert } from 'react-native';
-import React, { useState, useEffect } from 'react';
-import { API_URL } from '@env';
+import {
+  FlatList,
+  Text,
+  View,
+  StyleSheet,
+  TouchableOpacity,
+  Modal,
+  ScrollView,
+  ActivityIndicator,
+  Alert,
+} from 'react-native';
+import React, {useState, useEffect} from 'react';
+import {API_URL} from '@env';
 import axios from 'axios';
 import Icon from 'react-native-vector-icons/FontAwesome';
-import { getData, storeData, formatToView, convertTime } from './Utility';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import {getData, storeData, formatToView, convertTime} from './Utility';
+import {useNavigation, useFocusEffect} from '@react-navigation/native';
 import ClassDocuments from './ClassDocuments';
 
-
 export default function ClassDetail() {
-  const Separator = () => <View style={{ height: 10 }} />;
+  const Separator = () => <View style={{height: 10}} />;
   const navigation = useNavigation();
   const [attendanceList, setAttendanceList] = useState([]);
   const [courseCode, setCourseCode] = useState('');
@@ -36,15 +45,16 @@ export default function ClassDetail() {
       maxBodyLength: Infinity,
       url: `${API_URL}/student/get-my-attendance-in-a-course?courseId=${currentClassId}`,
       headers: {
-        'Authorization': 'Bearer ' + await getData('accessToken')
-      }
+        Authorization: 'Bearer ' + (await getData('accessToken')),
+      },
     };
 
-    axios.request(config)
-      .then((response) => {
+    axios
+      .request(config)
+      .then(response => {
         setAttendanceList(response.data);
       })
-      .catch((error) => {
+      .catch(error => {
         console.log(error);
       });
   };
@@ -57,42 +67,44 @@ export default function ClassDetail() {
       maxBodyLength: Infinity,
       url: `${API_URL}/courses/${currentClassId}/assessments`,
       headers: {
-        'Authorization': 'Bearer ' + await getData('accessToken')
-      }
+        Authorization: 'Bearer ' + (await getData('accessToken')),
+      },
     };
 
-    axios.request(config)
-      .then((response) => {
+    axios
+      .request(config)
+      .then(response => {
         setAssessmentsList(response.data);
       })
-      .catch((error) => {
+      .catch(error => {
         console.log(error);
-        Alert.alert("Lỗi", "Không thể lấy danh sách bài thi/bài tập!");
+        Alert.alert('Lỗi', 'Không thể lấy danh sách bài thi/bài tập!');
       })
       .finally(() => {
         setIsAssessmentsLoading(false);
       });
   };
 
-  const fetchSubmissionGrades = async (submissionId) => {
+  const fetchSubmissionGrades = async submissionId => {
     setIsSubmissionLoading(true);
     let config = {
       method: 'get',
       maxBodyLength: Infinity,
       url: `${API_URL}/submissions/${submissionId}/grades`,
       headers: {
-        'Authorization': 'Bearer ' + await getData('accessToken')
-      }
+        Authorization: 'Bearer ' + (await getData('accessToken')),
+      },
     };
 
-    axios.request(config)
-      .then((response) => {
+    axios
+      .request(config)
+      .then(response => {
         setSelectedSubmission(response.data);
         setIsModalVisible(true);
       })
-      .catch((error) => {
+      .catch(error => {
         console.log(error);
-        Alert.alert("Lỗi", "Không thể lấy chi tiết điểm thi!");
+        Alert.alert('Lỗi', 'Không thể lấy chi tiết điểm thi!');
       })
       .finally(() => {
         setIsSubmissionLoading(false);
@@ -112,52 +124,77 @@ export default function ClassDetail() {
       if (activeTab === 'assessment') {
         fetchAssessments();
       }
-    }, [activeTab])
+    }, [activeTab]),
   );
 
   const handleStartExam = () => {
     Alert.alert(
-      "Thông báo",
-      "Tính năng làm bài thi có giám sát chống gian lận bằng AI yêu cầu Webcam và Màn hình máy tính lớn để hiệu chuẩn mắt và ghi hình. Vui lòng đăng nhập trang web thuvienso.io.vn trên máy tính để thực hiện bài thi này.",
-      [{ text: "Đồng ý", style: "default" }]
+      'Thông báo',
+      'Tính năng làm bài thi có giám sát chống gian lận bằng AI yêu cầu Webcam và Màn hình máy tính lớn để hiệu chuẩn mắt và ghi hình. Vui lòng đăng nhập trang web thuvienso.io.vn trên máy tính để thực hiện bài thi này.',
+      [{text: 'Đồng ý', style: 'default'}],
     );
   };
 
-  const renderAssessmentItem = ({ item }) => {
-    const isDeadlinePassed = item.deadline ? new Date(item.deadline) < new Date() : false;
-    const canTake = item.submissionStatus === 'NOT_STARTED' || item.submissionStatus === 'IN_PROGRESS';
+  const renderAssessmentItem = ({item}) => {
+    const isDeadlinePassed = item.deadline
+      ? new Date(item.deadline) < new Date()
+      : false;
+    const canTake =
+      item.submissionStatus === 'NOT_STARTED' ||
+      item.submissionStatus === 'IN_PROGRESS';
 
     return (
       <View style={styles.card}>
         <View style={styles.cardHeader}>
           <Text style={[styles.badge, styles.typeBadge(item.type)]}>
-            {item.type === 'QUIZ' ? 'Trắc nghiệm' :
-             item.type === 'MID_TERM' ? 'Giữa kỳ' :
-             item.type === 'FINAL_EXAM' ? 'Cuối kỳ' :
-             'Bài tập'}
+            {item.type === 'QUIZ'
+              ? 'Trắc nghiệm'
+              : item.type === 'MID_TERM'
+              ? 'Giữa kỳ'
+              : item.type === 'FINAL_EXAM'
+              ? 'Cuối kỳ'
+              : 'Bài tập'}
           </Text>
-          <Text style={[styles.badge, styles.statusBadge(item.submissionStatus)]}>
-            {item.submissionStatus === 'GRADED' ? 'Đã chấm điểm' :
-             item.submissionStatus === 'SUBMITTED' ? 'Đã nộp bài' :
-             item.submissionStatus === 'IN_PROGRESS' ? 'Đang làm dở' :
-             'Chưa làm'}
+          <Text
+            style={[styles.badge, styles.statusBadge(item.submissionStatus)]}>
+            {item.submissionStatus === 'GRADED'
+              ? 'Đã chấm điểm'
+              : item.submissionStatus === 'SUBMITTED'
+              ? 'Đã nộp bài'
+              : item.submissionStatus === 'IN_PROGRESS'
+              ? 'Đang làm dở'
+              : 'Chưa làm'}
           </Text>
         </View>
 
         <Text style={styles.assessmentTitle}>{item.title}</Text>
-        {item.description ? <Text style={styles.assessmentDesc}>{item.description}</Text> : null}
+        {item.description ? (
+          <Text style={styles.assessmentDesc}>{item.description}</Text>
+        ) : null}
 
         <View style={styles.divider} />
 
         <View style={styles.metaRow}>
           <View style={styles.metaItem}>
             <Icon name="clock-o" size={14} color="#7F8C8D" />
-            <Text style={styles.metaText}>{item.durationMinutes ? `${item.durationMinutes} phút` : 'Không giới hạn'}</Text>
+            <Text style={styles.metaText}>
+              {item.durationMinutes
+                ? `${item.durationMinutes} phút`
+                : 'Không giới hạn'}
+            </Text>
           </View>
           {item.deadline ? (
             <View style={styles.metaItem}>
-              <Icon name="calendar" size={14} color={isDeadlinePassed ? "#E74C3C" : "#7F8C8D"} />
-              <Text style={[styles.metaText, isDeadlinePassed && styles.deadlinePassedText]}>
+              <Icon
+                name="calendar"
+                size={14}
+                color={isDeadlinePassed ? '#E74C3C' : '#7F8C8D'}
+              />
+              <Text
+                style={[
+                  styles.metaText,
+                  isDeadlinePassed && styles.deadlinePassedText,
+                ]}>
                 Hạn: {formatToView(convertTime(item.deadline))}
               </Text>
             </View>
@@ -166,37 +203,61 @@ export default function ClassDetail() {
 
         {item.submissionStatus === 'GRADED' && item.studentScore !== null ? (
           <View style={styles.scoreSummaryRow}>
-            <Icon name="trophy" size={18} color="#27AE60" style={{ marginRight: 6 }} />
-            <Text style={styles.scoreSummaryText}>Điểm đạt được: {item.studentScore} / {item.maxScore}đ</Text>
+            <Icon
+              name="trophy"
+              size={18}
+              color="#27AE60"
+              style={{marginRight: 6}}
+            />
+            <Text style={styles.scoreSummaryText}>
+              Điểm đạt được: {item.studentScore} / {item.maxScore}đ
+            </Text>
           </View>
         ) : null}
 
         <View style={styles.cardActionRow}>
           {canTake && !isDeadlinePassed ? (
-            <TouchableOpacity style={styles.takeExamButton} onPress={handleStartExam}>
-              <Icon name="play" size={14} color="#FFF" style={{ marginRight: 6 }} />
+            <TouchableOpacity
+              style={styles.takeExamButton}
+              onPress={handleStartExam}>
+              <Icon
+                name="play"
+                size={14}
+                color="#FFF"
+                style={{marginRight: 6}}
+              />
               <Text style={styles.takeExamButtonText}>
-                {item.submissionStatus === 'IN_PROGRESS' ? 'Làm tiếp' : 'Bắt đầu làm'}
+                {item.submissionStatus === 'IN_PROGRESS'
+                  ? 'Làm tiếp'
+                  : 'Bắt đầu làm'}
               </Text>
             </TouchableOpacity>
           ) : item.submissionStatus === 'GRADED' && item.submissionId ? (
-            <TouchableOpacity 
-              style={styles.viewGradesButton} 
+            <TouchableOpacity
+              style={styles.viewGradesButton}
               onPress={() => fetchSubmissionGrades(item.submissionId)}
-              disabled={isSubmissionLoading}
-            >
+              disabled={isSubmissionLoading}>
               {isSubmissionLoading ? (
                 <ActivityIndicator size="small" color="#27AE60" />
               ) : (
                 <>
-                  <Icon name="eye" size={14} color="#27AE60" style={{ marginRight: 6 }} />
-                  <Text style={styles.viewGradesButtonText}>Xem chi tiết & Nhận xét</Text>
+                  <Icon
+                    name="eye"
+                    size={14}
+                    color="#27AE60"
+                    style={{marginRight: 6}}
+                  />
+                  <Text style={styles.viewGradesButtonText}>
+                    Xem chi tiết & Nhận xét
+                  </Text>
                 </>
               )}
             </TouchableOpacity>
           ) : (
             <TouchableOpacity style={styles.disabledButton} disabled={true}>
-              <Text style={styles.disabledButtonText}>Không thể làm (Hết hạn / Đã nộp)</Text>
+              <Text style={styles.disabledButtonText}>
+                Không thể làm (Hết hạn / Đã nộp)
+              </Text>
             </TouchableOpacity>
           )}
         </View>
@@ -213,8 +274,15 @@ export default function ClassDetail() {
       </View>
 
       <View style={styles.activeBar}>
-        <TouchableOpacity style={styles.addButton} onPress={() => navigation.navigate('ClassDiscussion')}>
-          <Icon name="comments" size={16} color="#FFFFFF" style={{ marginRight: 8 }} />
+        <TouchableOpacity
+          style={styles.addButton}
+          onPress={() => navigation.navigate('ClassDiscussion')}>
+          <Icon
+            name="comments"
+            size={16}
+            color="#FFFFFF"
+            style={{marginRight: 8}}
+          />
           <Text style={styles.addButtonText}>Thảo luận lớp học</Text>
         </TouchableOpacity>
       </View>
@@ -222,31 +290,49 @@ export default function ClassDetail() {
       {/* Segmented Tab Bar */}
       <View style={styles.tabContainer}>
         <TouchableOpacity
-          style={[styles.tabButton, activeTab === 'attendance' && styles.activeTabButton]}
-          onPress={() => setActiveTab('attendance')}
-        >
-          <Text style={[styles.tabButtonText, activeTab === 'attendance' && styles.activeTabButtonText]}>
+          style={[
+            styles.tabButton,
+            activeTab === 'attendance' && styles.activeTabButton,
+          ]}
+          onPress={() => setActiveTab('attendance')}>
+          <Text
+            style={[
+              styles.tabButtonText,
+              activeTab === 'attendance' && styles.activeTabButtonText,
+            ]}>
             Nhật ký chuyên cần
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.tabButton, activeTab === 'assessment' && styles.activeTabButton]}
+          style={[
+            styles.tabButton,
+            activeTab === 'assessment' && styles.activeTabButton,
+          ]}
           onPress={() => {
             setActiveTab('assessment');
             fetchAssessments();
-          }}
-        >
-          <Text style={[styles.tabButtonText, activeTab === 'assessment' && styles.activeTabButtonText]}>
+          }}>
+          <Text
+            style={[
+              styles.tabButtonText,
+              activeTab === 'assessment' && styles.activeTabButtonText,
+            ]}>
             Bài thi & Bài tập
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.tabButton, activeTab === 'document' && styles.activeTabButton]}
+          style={[
+            styles.tabButton,
+            activeTab === 'document' && styles.activeTabButton,
+          ]}
           onPress={() => {
             setActiveTab('document');
-          }}
-        >
-          <Text style={[styles.tabButtonText, activeTab === 'document' && styles.activeTabButtonText]}>
+          }}>
+          <Text
+            style={[
+              styles.tabButtonText,
+              activeTab === 'document' && styles.activeTabButtonText,
+            ]}>
             Tài liệu
           </Text>
         </TouchableOpacity>
@@ -260,11 +346,13 @@ export default function ClassDetail() {
           <View style={[styles.studentList]}>
             <FlatList
               data={attendanceList}
-              renderItem={({ item }) => (
+              renderItem={({item}) => (
                 <View style={styles.card}>
                   <View style={styles.infoRow}>
                     <Text style={styles.infoLabel}>Thời gian điểm danh:</Text>
-                    <Text style={styles.infoValue}>{formatToView(convertTime(item.attendanceTime))}</Text>
+                    <Text style={styles.infoValue}>
+                      {formatToView(convertTime(item.attendanceTime))}
+                    </Text>
                   </View>
                   <View style={styles.infoRow}>
                     <Text style={styles.infoLabel}>Buổi học số:</Text>
@@ -272,12 +360,14 @@ export default function ClassDetail() {
                   </View>
                   <View style={styles.infoRow}>
                     <Text style={styles.infoLabel}>Đi/Vắng:</Text>
-                    <Text style={styles.infoValue}>{item.isAttendance ? 'Đi' : 'Vắng'}</Text>
+                    <Text style={styles.infoValue}>
+                      {item.isAttendance ? 'Đi' : 'Vắng'}
+                    </Text>
                   </View>
                 </View>
               )}
               keyExtractor={item => item.id.toString()}
-              contentContainerStyle={{ paddingBottom: 20 }}
+              contentContainerStyle={{paddingBottom: 20}}
               ItemSeparatorComponent={Separator}
             />
           </View>
@@ -291,19 +381,23 @@ export default function ClassDetail() {
             {isAssessmentsLoading ? (
               <View style={styles.loaderContainer}>
                 <ActivityIndicator size="large" color="#34568B" />
-                <Text style={{ marginTop: 10, color: '#7F8C8D' }}>Đang tải bài thi...</Text>
+                <Text style={{marginTop: 10, color: '#7F8C8D'}}>
+                  Đang tải bài thi...
+                </Text>
               </View>
             ) : assessmentsList.length === 0 ? (
               <View style={styles.emptyContainer}>
                 <Icon name="file-text-o" size={48} color="#BDC3C7" />
-                <Text style={styles.emptyText}>Hiện tại chưa có bài tập hoặc đề thi nào được tạo.</Text>
+                <Text style={styles.emptyText}>
+                  Hiện tại chưa có bài tập hoặc đề thi nào được tạo.
+                </Text>
               </View>
             ) : (
               <FlatList
                 data={assessmentsList}
                 renderItem={renderAssessmentItem}
                 keyExtractor={item => item.id.toString()}
-                contentContainerStyle={{ paddingBottom: 20 }}
+                contentContainerStyle={{paddingBottom: 20}}
                 ItemSeparatorComponent={Separator}
               />
             )}
@@ -318,8 +412,7 @@ export default function ClassDetail() {
         animationType="slide"
         transparent={true}
         visible={isModalVisible}
-        onRequestClose={() => setIsModalVisible(false)}
-      >
+        onRequestClose={() => setIsModalVisible(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
@@ -327,69 +420,112 @@ export default function ClassDetail() {
                 <Text style={styles.modalTitle}>Chi tiết kết quả bài làm</Text>
                 {selectedSubmission && (
                   <Text style={styles.modalSubTime}>
-                    Nộp: {selectedSubmission.submittedAt ? formatToView(convertTime(selectedSubmission.submittedAt)) : 'Đang xử lý'}
+                    Nộp:{' '}
+                    {selectedSubmission.submittedAt
+                      ? formatToView(
+                          convertTime(selectedSubmission.submittedAt),
+                        )
+                      : 'Đang xử lý'}
                   </Text>
                 )}
               </View>
-              <TouchableOpacity onPress={() => setIsModalVisible(false)} style={styles.modalCloseIcon}>
+              <TouchableOpacity
+                onPress={() => setIsModalVisible(false)}
+                style={styles.modalCloseIcon}>
                 <Icon name="times" size={20} color="#7F8C8D" />
               </TouchableOpacity>
             </View>
 
             {selectedSubmission && (
-              <ScrollView style={styles.modalScroll} contentContainerStyle={{ paddingBottom: 30 }}>
+              <ScrollView
+                style={styles.modalScroll}
+                contentContainerStyle={{paddingBottom: 30}}>
                 <View style={styles.scoreContainer}>
                   <Text style={styles.scoreLabel}>Tổng điểm đạt được</Text>
-                  <Text style={styles.scoreValue}>{selectedSubmission.finalScore ?? 0}đ</Text>
+                  <Text style={styles.scoreValue}>
+                    {selectedSubmission.finalScore ?? 0}đ
+                  </Text>
                 </View>
 
                 {selectedSubmission.teacherFeedback ? (
                   <View style={styles.feedbackContainer}>
-                    <Text style={styles.feedbackLabel}>Nhận xét của Giảng viên:</Text>
-                    <Text style={styles.feedbackText}>"{selectedSubmission.teacherFeedback}"</Text>
+                    <Text style={styles.feedbackLabel}>
+                      Nhận xét của Giảng viên:
+                    </Text>
+                    <Text style={styles.feedbackText}>
+                      "{selectedSubmission.teacherFeedback}"
+                    </Text>
                   </View>
                 ) : null}
 
                 <Text style={styles.sectionTitle}>Chi tiết từng câu hỏi</Text>
-                {selectedSubmission.answers && selectedSubmission.answers.map((ans, idx) => (
-                  <View key={idx} style={styles.answerCard}>
-                    <View style={styles.answerCardHeader}>
-                      <Text style={styles.answerQuestionNum}>Câu hỏi {idx + 1}</Text>
-                      <View style={styles.badgeRow}>
-                        {ans.isCorrect === true ? (
-                          <Text style={[styles.miniBadge, styles.correctBadge]}>Đúng</Text>
-                        ) : ans.isCorrect === false ? (
-                          <Text style={[styles.miniBadge, styles.incorrectBadge]}>Sai</Text>
+                {selectedSubmission.answers &&
+                  selectedSubmission.answers.map((ans, idx) => (
+                    <View key={idx} style={styles.answerCard}>
+                      <View style={styles.answerCardHeader}>
+                        <Text style={styles.answerQuestionNum}>
+                          Câu hỏi {idx + 1}
+                        </Text>
+                        <View style={styles.badgeRow}>
+                          {ans.isCorrect === true ? (
+                            <Text
+                              style={[styles.miniBadge, styles.correctBadge]}>
+                              Đúng
+                            </Text>
+                          ) : ans.isCorrect === false ? (
+                            <Text
+                              style={[styles.miniBadge, styles.incorrectBadge]}>
+                              Sai
+                            </Text>
+                          ) : (
+                            <Text style={[styles.miniBadge, styles.essayBadge]}>
+                              Tự luận
+                            </Text>
+                          )}
+                          <Text style={styles.answerScore}>
+                            {ans.score !== null ? `${ans.score}đ` : 'Chờ chấm'}
+                          </Text>
+                        </View>
+                      </View>
+
+                      <View style={styles.studentAnswerBox}>
+                        <Text style={styles.studentAnswerLabel}>
+                          Bài làm của bạn:
+                        </Text>
+                        {ans.selectedChoice ? (
+                          <Text style={styles.studentAnswerText}>
+                            Lựa chọn:{' '}
+                            <Text
+                              style={{fontWeight: 'bold', color: '#34568B'}}>
+                              {ans.selectedChoice}
+                            </Text>
+                          </Text>
+                        ) : ans.answerText ? (
+                          <Text style={styles.studentAnswerText}>
+                            {ans.answerText}
+                          </Text>
                         ) : (
-                          <Text style={[styles.miniBadge, styles.essayBadge]}>Tự luận</Text>
+                          <Text style={styles.studentAnswerPlaceholder}>
+                            Không trả lời
+                          </Text>
                         )}
-                        <Text style={styles.answerScore}>
-                          {ans.score !== null ? `${ans.score}đ` : 'Chờ chấm'}
-                        </Text>
                       </View>
-                    </View>
 
-                    <View style={styles.studentAnswerBox}>
-                      <Text style={styles.studentAnswerLabel}>Bài làm của bạn:</Text>
-                      {ans.selectedChoice ? (
-                        <Text style={styles.studentAnswerText}>Lựa chọn: <Text style={{fontWeight: 'bold', color: '#34568B'}}>{ans.selectedChoice}</Text></Text>
-                      ) : ans.answerText ? (
-                        <Text style={styles.studentAnswerText}>{ans.answerText}</Text>
-                      ) : (
-                        <Text style={styles.studentAnswerPlaceholder}>Không trả lời</Text>
-                      )}
+                      {ans.teacherComment ? (
+                        <View style={styles.teacherCommentContainer}>
+                          <Icon
+                            name="commenting-o"
+                            size={12}
+                            color="#D35400"
+                            style={{marginRight: 4, marginTop: 2}}
+                          />
+                          <Text style={styles.teacherCommentText}>
+                            Nhận xét: {ans.teacherComment}
+                          </Text>
+                        </View>
+                      ) : null}
                     </View>
-
-                    {ans.teacherComment ? (
-                      <View style={styles.teacherCommentContainer}>
-                        <Icon name="commenting-o" size={12} color="#D35400" style={{ marginRight: 4, marginTop: 2 }} />
-                        <Text style={styles.teacherCommentText}>
-                          Nhận xét: {ans.teacherComment}
-                        </Text>
-                      </View>
-                    ) : null}
-                  </View>
-                ))}
+                  ))}
               </ScrollView>
             )}
           </View>
@@ -408,14 +544,14 @@ const styles = StyleSheet.create({
   },
   studentList: {
     flex: 10,
-    width: "100%",
+    width: '100%',
     padding: 15,
     backgroundColor: '#ECF0F1', // Màu nền nhẹ nhàng
   },
   container: {
     flex: 1.2,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
     backgroundColor: '#ECF0F1', // Màu nền sáng và hài hòa
     flexDirection: 'row',
   },
@@ -427,7 +563,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#ECF0F1', // Màu nền đậm hơn một chút để tạo sự khác biệt
     paddingVertical: 10,
-    paddingHorizontal: 15
+    paddingHorizontal: 15,
   },
   addButton: {
     backgroundColor: '#34568B', // Màu xanh tươi sáng cho nút
@@ -452,7 +588,7 @@ const styles = StyleSheet.create({
     borderColor: '#BDC3C7', // Viền nhẹ nhàng để tách biệt
     borderWidth: 1,
     shadowColor: '#000', // Thêm đổ bóng để nổi bật hơn
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.8,
     shadowRadius: 2,
     elevation: 3,
@@ -468,7 +604,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 15,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     elevation: 5,
@@ -477,7 +613,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 5,
-    alignItems: 'center' // Aligns text and icon vertically
+    alignItems: 'center', // Aligns text and icon vertically
   },
   infoLabel: {
     fontSize: 16,
@@ -528,20 +664,28 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     overflow: 'hidden',
   },
-  typeBadge: (type) => {
+  typeBadge: type => {
     switch (type) {
-      case 'QUIZ': return { backgroundColor: '#E0F2FE', color: '#0369A1' };
-      case 'MID_TERM': return { backgroundColor: '#FFEAD2', color: '#D35400' };
-      case 'FINAL_EXAM': return { backgroundColor: '#FCE8E6', color: '#C0392B' };
-      default: return { backgroundColor: '#E8F8F5', color: '#117A65' };
+      case 'QUIZ':
+        return {backgroundColor: '#E0F2FE', color: '#0369A1'};
+      case 'MID_TERM':
+        return {backgroundColor: '#FFEAD2', color: '#D35400'};
+      case 'FINAL_EXAM':
+        return {backgroundColor: '#FCE8E6', color: '#C0392B'};
+      default:
+        return {backgroundColor: '#E8F8F5', color: '#117A65'};
     }
   },
-  statusBadge: (status) => {
+  statusBadge: status => {
     switch (status) {
-      case 'GRADED': return { backgroundColor: '#D4EDDA', color: '#155724' };
-      case 'SUBMITTED': return { backgroundColor: '#CCE5FF', color: '#004085' };
-      case 'IN_PROGRESS': return { backgroundColor: '#FFF3CD', color: '#856404' };
-      default: return { backgroundColor: '#E2E8F0', color: '#475569' };
+      case 'GRADED':
+        return {backgroundColor: '#D4EDDA', color: '#155724'};
+      case 'SUBMITTED':
+        return {backgroundColor: '#CCE5FF', color: '#004085'};
+      case 'IN_PROGRESS':
+        return {backgroundColor: '#FFF3CD', color: '#856404'};
+      default:
+        return {backgroundColor: '#E2E8F0', color: '#475569'};
     }
   },
   assessmentTitle: {
@@ -671,7 +815,7 @@ const styles = StyleSheet.create({
     height: '85%',
     width: '100%',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
+    shadowOffset: {width: 0, height: -2},
     shadowOpacity: 0.25,
     shadowRadius: 5,
     elevation: 10,
@@ -833,4 +977,4 @@ const styles = StyleSheet.create({
     flex: 1,
     lineHeight: 16,
   },
-});
+});

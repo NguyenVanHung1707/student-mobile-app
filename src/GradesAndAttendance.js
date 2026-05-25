@@ -1,18 +1,18 @@
-import React, { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ScrollView, 
-  TouchableOpacity, 
-  ActivityIndicator, 
-  Alert 
+import React, {useState} from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+import {useFocusEffect} from '@react-navigation/native';
 import axios from 'axios';
-import { API_URL } from '@env';
+import {API_URL} from '@env';
 import Icon from 'react-native-vector-icons/FontAwesome';
-import { getData } from './Utility';
+import {getData} from './Utility';
 import GradesAnalytics from './GradesAnalytics';
 
 export default function GradesAndAttendance() {
@@ -38,9 +38,12 @@ export default function GradesAndAttendance() {
       }
 
       // 1. Fetch enrolled courses
-      const courseResponse = await axios.get(`${API_URL}/student/get-my-course`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      const courseResponse = await axios.get(
+        `${API_URL}/student/get-my-course`,
+        {
+          headers: {Authorization: `Bearer ${token}`},
+        },
+      );
 
       const courseList = courseResponse.data || [];
       setCourses(courseList);
@@ -57,39 +60,47 @@ export default function GradesAndAttendance() {
       let totalRateSum = 0;
 
       await Promise.all(
-        courseList.map(async (course) => {
+        courseList.map(async course => {
           try {
             // Fetch attendance logs
             const attendanceResponse = await axios.get(
               `${API_URL}/student/get-my-attendance-in-a-course?courseId=${course.id}`,
-              { headers: { 'Authorization': `Bearer ${token}` } }
+              {headers: {Authorization: `Bearer ${token}`}},
             );
             const logs = attendanceResponse.data || [];
 
             // Fetch assessments
             const assessmentsResponse = await axios.get(
               `${API_URL}/courses/${course.id}/assessments`,
-              { headers: { 'Authorization': `Bearer ${token}` } }
+              {headers: {Authorization: `Bearer ${token}`}},
             );
             const assessments = assessmentsResponse.data || [];
 
             const totalSessions = logs.length;
             const presences = logs.filter(l => l.isAttendance).length;
             const absences = logs.filter(l => !l.isAttendance).length;
-            const rate = totalSessions > 0 ? Math.round((presences / totalSessions) * 100) : 100;
+            const rate =
+              totalSessions > 0
+                ? Math.round((presences / totalSessions) * 100)
+                : 100;
 
             totalAbsCount += absences;
             totalRateSum += rate;
 
-            const absentLogs = logs.filter(l => !l.isAttendance).map(l => {
-              const d = new Date(l.attendanceTime);
-              return {
-                id: l.id,
-                date: d.toLocaleDateString('vi-VN'),
-                time: d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-                lectureNumber: l.lectureNumber || 1
-              };
-            });
+            const absentLogs = logs
+              .filter(l => !l.isAttendance)
+              .map(l => {
+                const d = new Date(l.attendanceTime);
+                return {
+                  id: l.id,
+                  date: d.toLocaleDateString('vi-VN'),
+                  time: d.toLocaleTimeString('vi-VN', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  }),
+                  lectureNumber: l.lectureNumber || 1,
+                };
+              });
 
             details[course.id] = {
               attendanceLogs: logs,
@@ -97,7 +108,7 @@ export default function GradesAndAttendance() {
               assessments,
               attendanceRate: rate,
               presences,
-              absences
+              absences,
             };
           } catch (err) {
             console.log(`Lỗi load chi tiết lớp ${course.id}:`, err);
@@ -107,15 +118,18 @@ export default function GradesAndAttendance() {
               assessments: [],
               attendanceRate: 100,
               presences: 0,
-              absences: 0
+              absences: 0,
             };
           }
-        })
+        }),
       );
 
       setCourseDetails(details);
-      
-      const avgRate = courseList.length > 0 ? Math.round(totalRateSum / courseList.length) : 100;
+
+      const avgRate =
+        courseList.length > 0
+          ? Math.round(totalRateSum / courseList.length)
+          : 100;
       setAverageAttendance(avgRate);
       setTotalAbsences(totalAbsCount);
 
@@ -125,10 +139,12 @@ export default function GradesAndAttendance() {
         tabs[c.id] = 'grades';
       });
       setCourseActiveTabs(tabs);
-
     } catch (error) {
-      console.log("Lỗi khi tải kết quả học tập:", error);
-      Alert.alert("Lỗi", "Không thể lấy thông tin kết quả học tập. Vui lòng thử lại sau.");
+      console.log('Lỗi khi tải kết quả học tập:', error);
+      Alert.alert(
+        'Lỗi',
+        'Không thể lấy thông tin kết quả học tập. Vui lòng thử lại sau.',
+      );
     } finally {
       setLoading(false);
     }
@@ -137,10 +153,10 @@ export default function GradesAndAttendance() {
   useFocusEffect(
     React.useCallback(() => {
       fetchAllData();
-    }, [])
+    }, []),
   );
 
-  const toggleExpand = (courseId) => {
+  const toggleExpand = courseId => {
     if (expandedCourseId === courseId) {
       setExpandedCourseId(null);
     } else {
@@ -148,30 +164,42 @@ export default function GradesAndAttendance() {
     }
   };
 
-  const getAssessmentTypeLabel = (type) => {
+  const getAssessmentTypeLabel = type => {
     switch (type) {
-      case 'QUIZ': return 'Trắc nghiệm';
-      case 'MID_TERM': return 'Giữa kỳ';
-      case 'FINAL_EXAM': return 'Cuối kỳ';
-      default: return 'Bài tập';
+      case 'QUIZ':
+        return 'Trắc nghiệm';
+      case 'MID_TERM':
+        return 'Giữa kỳ';
+      case 'FINAL_EXAM':
+        return 'Cuối kỳ';
+      default:
+        return 'Bài tập';
     }
   };
 
-  const getStatusLabel = (status) => {
+  const getStatusLabel = status => {
     switch (status) {
-      case 'GRADED': return 'Đã chấm';
-      case 'SUBMITTED': return 'Đã nộp';
-      case 'IN_PROGRESS': return 'Đang làm';
-      default: return 'Chưa làm';
+      case 'GRADED':
+        return 'Đã chấm';
+      case 'SUBMITTED':
+        return 'Đã nộp';
+      case 'IN_PROGRESS':
+        return 'Đang làm';
+      default:
+        return 'Chưa làm';
     }
   };
 
-  const getStatusStyle = (status) => {
+  const getStatusStyle = status => {
     switch (status) {
-      case 'GRADED': return styles.statusGraded;
-      case 'SUBMITTED': return styles.statusSubmitted;
-      case 'IN_PROGRESS': return styles.statusInProgress;
-      default: return styles.statusNotStarted;
+      case 'GRADED':
+        return styles.statusGraded;
+      case 'SUBMITTED':
+        return styles.statusSubmitted;
+      case 'IN_PROGRESS':
+        return styles.statusInProgress;
+      default:
+        return styles.statusNotStarted;
     }
   };
 
@@ -185,24 +213,44 @@ export default function GradesAndAttendance() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#f8fafc' }}>
+    <View style={{flex: 1, backgroundColor: '#f8fafc'}}>
       {/* Switcher Tab Bar */}
       <View style={styles.topTabBar}>
-        <TouchableOpacity 
-          style={[styles.topTabButton, viewMode === 'list' && styles.activeTopTabButton]}
-          onPress={() => setViewMode('list')}
-        >
-          <Icon name="list-alt" size={14} color={viewMode === 'list' ? '#ffffff' : '#64748b'} />
-          <Text style={[styles.topTabButtonText, viewMode === 'list' && styles.activeTopTabButtonText]}>
+        <TouchableOpacity
+          style={[
+            styles.topTabButton,
+            viewMode === 'list' && styles.activeTopTabButton,
+          ]}
+          onPress={() => setViewMode('list')}>
+          <Icon
+            name="list-alt"
+            size={14}
+            color={viewMode === 'list' ? '#ffffff' : '#64748b'}
+          />
+          <Text
+            style={[
+              styles.topTabButtonText,
+              viewMode === 'list' && styles.activeTopTabButtonText,
+            ]}>
             Bảng điểm chi tiết
           </Text>
         </TouchableOpacity>
-        <TouchableOpacity 
-          style={[styles.topTabButton, viewMode === 'analytics' && styles.activeTopTabButton]}
-          onPress={() => setViewMode('analytics')}
-        >
-          <Icon name="bar-chart" size={14} color={viewMode === 'analytics' ? '#ffffff' : '#64748b'} />
-          <Text style={[styles.topTabButtonText, viewMode === 'analytics' && styles.activeTopTabButtonText]}>
+        <TouchableOpacity
+          style={[
+            styles.topTabButton,
+            viewMode === 'analytics' && styles.activeTopTabButton,
+          ]}
+          onPress={() => setViewMode('analytics')}>
+          <Icon
+            name="bar-chart"
+            size={14}
+            color={viewMode === 'analytics' ? '#ffffff' : '#64748b'}
+          />
+          <Text
+            style={[
+              styles.topTabButtonText,
+              viewMode === 'analytics' && styles.activeTopTabButtonText,
+            ]}>
             Phân tích học tập
           </Text>
         </TouchableOpacity>
@@ -211,7 +259,9 @@ export default function GradesAndAttendance() {
       {viewMode === 'analytics' ? (
         <GradesAnalytics />
       ) : (
-        <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 30 }}>
+        <ScrollView
+          style={styles.container}
+          contentContainerStyle={{paddingBottom: 30}}>
           {/* Stats Summary Board */}
           <View style={styles.statsRow}>
             <View style={styles.statCard}>
@@ -222,161 +272,250 @@ export default function GradesAndAttendance() {
 
             <View style={styles.statCard}>
               <Icon name="percent" size={18} color="#4CAF50" />
-              <Text style={[styles.statVal, { color: '#4CAF50' }]}>{averageAttendance}%</Text>
+              <Text style={[styles.statVal, {color: '#4CAF50'}]}>
+                {averageAttendance}%
+              </Text>
               <Text style={styles.statLabel}>Chuyên cần</Text>
             </View>
 
             <View style={styles.statCard}>
               <Icon name="exclamation-circle" size={20} color="#F44336" />
-              <Text style={[styles.statVal, { color: '#F44336' }]}>{totalAbsences}</Text>
+              <Text style={[styles.statVal, {color: '#F44336'}]}>
+                {totalAbsences}
+              </Text>
               <Text style={styles.statLabel}>Nghỉ học</Text>
             </View>
           </View>
 
           {/* Courses Accordion List */}
-          <Text style={styles.sectionTitle}>Bảng điểm & Chuyên cần chi tiết</Text>
+          <Text style={styles.sectionTitle}>
+            Bảng điểm & Chuyên cần chi tiết
+          </Text>
 
           {courses.length === 0 ? (
             <View style={styles.emptyContainer}>
               <Icon name="graduation-cap" size={50} color="#ccc" />
-              <Text style={styles.emptyText}>Bạn chưa tham gia lớp học nào</Text>
+              <Text style={styles.emptyText}>
+                Bạn chưa tham gia lớp học nào
+              </Text>
             </View>
           ) : (
-        courses.map((course) => {
-          const detail = courseDetails[course.id] || {
-            attendanceRate: 100,
-            absences: 0,
-            presences: 0,
-            absentLogs: [],
-            assessments: []
-          };
-          const isExpanded = expandedCourseId === course.id;
-          const activeTab = courseActiveTabs[course.id] || 'grades';
+            courses.map(course => {
+              const detail = courseDetails[course.id] || {
+                attendanceRate: 100,
+                absences: 0,
+                presences: 0,
+                absentLogs: [],
+                assessments: [],
+              };
+              const isExpanded = expandedCourseId === course.id;
+              const activeTab = courseActiveTabs[course.id] || 'grades';
 
-          return (
-            <View key={course.id} style={[styles.courseCard, isExpanded && styles.expandedCard]}>
-              {/* Header Touchable */}
-              <TouchableOpacity 
-                activeOpacity={0.8}
-                style={styles.cardHeader}
-                onPress={() => toggleExpand(course.id)}
-              >
-                <View style={{ flex: 1 }}>
-                  <View style={styles.codeRow}>
-                    <Text style={styles.courseCode}>{course.courseCode}</Text>
-                    <View style={styles.rateBadge}>
-                      <Text style={[styles.rateBadgeText, {
-                        color: detail.attendanceRate >= 90 ? '#4CAF50' : detail.attendanceRate >= 80 ? '#FF9800' : '#F44336'
-                      }]}>
-                        Chuyên cần: {detail.attendanceRate}%
-                      </Text>
+              return (
+                <View
+                  key={course.id}
+                  style={[
+                    styles.courseCard,
+                    isExpanded && styles.expandedCard,
+                  ]}>
+                  {/* Header Touchable */}
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    style={styles.cardHeader}
+                    onPress={() => toggleExpand(course.id)}>
+                    <View style={{flex: 1}}>
+                      <View style={styles.codeRow}>
+                        <Text style={styles.courseCode}>
+                          {course.courseCode}
+                        </Text>
+                        <View style={styles.rateBadge}>
+                          <Text
+                            style={[
+                              styles.rateBadgeText,
+                              {
+                                color:
+                                  detail.attendanceRate >= 90
+                                    ? '#4CAF50'
+                                    : detail.attendanceRate >= 80
+                                    ? '#FF9800'
+                                    : '#F44336',
+                              },
+                            ]}>
+                            Chuyên cần: {detail.attendanceRate}%
+                          </Text>
+                        </View>
+                      </View>
+                      <Text style={styles.subjectText}>{course.subject}</Text>
                     </View>
-                  </View>
-                  <Text style={styles.subjectText}>{course.subject}</Text>
-                </View>
 
-                <Icon 
-                  name={isExpanded ? 'chevron-up' : 'chevron-down'} 
-                  size={16} 
-                  color="#666" 
-                  style={{ marginLeft: 10 }} 
-                />
-              </TouchableOpacity>
+                    <Icon
+                      name={isExpanded ? 'chevron-up' : 'chevron-down'}
+                      size={16}
+                      color="#666"
+                      style={{marginLeft: 10}}
+                    />
+                  </TouchableOpacity>
 
-              {/* Progress bar */}
-              <View style={styles.progressBarBg}>
-                <View style={[styles.progressBar, {
-                  width: `${detail.attendanceRate}%`,
-                  backgroundColor: detail.attendanceRate >= 90 ? '#4CAF50' : detail.attendanceRate >= 80 ? '#FF9800' : '#F44336'
-                }]} />
-              </View>
-
-              {/* Expanded Content */}
-              {isExpanded && (
-                <View style={styles.cardContent}>
-                  {/* Nested Tab Switcher */}
-                  <View style={styles.tabBar}>
-                    <TouchableOpacity
-                      onPress={() => setCourseActiveTabs(prev => ({ ...prev, [course.id]: 'grades' }))}
-                      style={[styles.tabButton, activeTab === 'grades' && styles.activeTabButton]}
-                    >
-                      <Text style={[styles.tabButtonText, activeTab === 'grades' && styles.activeTabButtonText]}>
-                        Bảng điểm ({detail.assessments.length})
-                      </Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      onPress={() => setCourseActiveTabs(prev => ({ ...prev, [course.id]: 'absences' }))}
-                      style={[styles.tabButton, activeTab === 'absences' && styles.activeTabButton]}
-                    >
-                      <Text style={[styles.tabButtonText, activeTab === 'absences' && styles.activeTabButtonText]}>
-                        Ngày vắng ({detail.absences})
-                      </Text>
-                    </TouchableOpacity>
+                  {/* Progress bar */}
+                  <View style={styles.progressBarBg}>
+                    <View
+                      style={[
+                        styles.progressBar,
+                        {
+                          width: `${detail.attendanceRate}%`,
+                          backgroundColor:
+                            detail.attendanceRate >= 90
+                              ? '#4CAF50'
+                              : detail.attendanceRate >= 80
+                              ? '#FF9800'
+                              : '#F44336',
+                        },
+                      ]}
+                    />
                   </View>
 
-                  {/* TAB CONTENT: GRADES */}
-                  {activeTab === 'grades' && (
-                    <View style={styles.tabContentContainer}>
-                      {detail.assessments.length === 0 ? (
-                        <Text style={styles.noDataText}>Chưa có cột điểm/bài thi nào được giao.</Text>
-                      ) : (
-                        detail.assessments.map((a) => (
-                          <View key={a.id} style={styles.gradeItem}>
-                            <View style={{ flex: 1 }}>
-                              <Text style={styles.gradeTitle}>{a.title}</Text>
-                              <View style={styles.badgeRow}>
-                                <Text style={styles.typeText}>{getAssessmentTypeLabel(a.type)}</Text>
-                                <Text style={[styles.statusText, getStatusStyle(a.submissionStatus)]}>
-                                  {getStatusLabel(a.submissionStatus)}
+                  {/* Expanded Content */}
+                  {isExpanded && (
+                    <View style={styles.cardContent}>
+                      {/* Nested Tab Switcher */}
+                      <View style={styles.tabBar}>
+                        <TouchableOpacity
+                          onPress={() =>
+                            setCourseActiveTabs(prev => ({
+                              ...prev,
+                              [course.id]: 'grades',
+                            }))
+                          }
+                          style={[
+                            styles.tabButton,
+                            activeTab === 'grades' && styles.activeTabButton,
+                          ]}>
+                          <Text
+                            style={[
+                              styles.tabButtonText,
+                              activeTab === 'grades' &&
+                                styles.activeTabButtonText,
+                            ]}>
+                            Bảng điểm ({detail.assessments.length})
+                          </Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                          onPress={() =>
+                            setCourseActiveTabs(prev => ({
+                              ...prev,
+                              [course.id]: 'absences',
+                            }))
+                          }
+                          style={[
+                            styles.tabButton,
+                            activeTab === 'absences' && styles.activeTabButton,
+                          ]}>
+                          <Text
+                            style={[
+                              styles.tabButtonText,
+                              activeTab === 'absences' &&
+                                styles.activeTabButtonText,
+                            ]}>
+                            Ngày vắng ({detail.absences})
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+
+                      {/* TAB CONTENT: GRADES */}
+                      {activeTab === 'grades' && (
+                        <View style={styles.tabContentContainer}>
+                          {detail.assessments.length === 0 ? (
+                            <Text style={styles.noDataText}>
+                              Chưa có cột điểm/bài thi nào được giao.
+                            </Text>
+                          ) : (
+                            detail.assessments.map(a => (
+                              <View key={a.id} style={styles.gradeItem}>
+                                <View style={{flex: 1}}>
+                                  <Text style={styles.gradeTitle}>
+                                    {a.title}
+                                  </Text>
+                                  <View style={styles.badgeRow}>
+                                    <Text style={styles.typeText}>
+                                      {getAssessmentTypeLabel(a.type)}
+                                    </Text>
+                                    <Text
+                                      style={[
+                                        styles.statusText,
+                                        getStatusStyle(a.submissionStatus),
+                                      ]}>
+                                      {getStatusLabel(a.submissionStatus)}
+                                    </Text>
+                                  </View>
+                                </View>
+                                <View style={styles.scoreBox}>
+                                  {a.submissionStatus === 'GRADED' &&
+                                  a.studentScore !== null ? (
+                                    <Text style={styles.scoreText}>
+                                      <Text style={styles.scoreTextMain}>
+                                        {a.studentScore}
+                                      </Text>
+                                      /{a.maxScore}
+                                    </Text>
+                                  ) : (
+                                    <Text style={styles.pendingScoreText}>
+                                      --/{a.maxScore}
+                                    </Text>
+                                  )}
+                                </View>
+                              </View>
+                            ))
+                          )}
+                        </View>
+                      )}
+
+                      {/* TAB CONTENT: ABSENCES */}
+                      {activeTab === 'absences' && (
+                        <View style={styles.tabContentContainer}>
+                          {detail.absences === 0 ? (
+                            <View style={styles.perfectBanner}>
+                              <Icon
+                                name="check-circle"
+                                size={24}
+                                color="#4CAF50"
+                              />
+                              <Text style={styles.perfectTitle}>
+                                Tuyệt vời! Chuyên cần 100%
+                              </Text>
+                              <Text style={styles.perfectSubtitle}>
+                                Bạn không nghỉ học buổi nào của học phần này.
+                              </Text>
+                            </View>
+                          ) : (
+                            detail.absentLogs.map(log => (
+                              <View key={log.id} style={styles.absenceItem}>
+                                <View style={styles.absenceLeft}>
+                                  <Icon
+                                    name="calendar-times-o"
+                                    size={16}
+                                    color="#F44336"
+                                  />
+                                  <Text style={styles.absenceText}>
+                                    Buổi học số {log.lectureNumber}
+                                  </Text>
+                                </View>
+                                <Text style={styles.absenceDate}>
+                                  {log.date} - {log.time}
                                 </Text>
                               </View>
-                            </View>
-                            <View style={styles.scoreBox}>
-                              {a.submissionStatus === 'GRADED' && a.studentScore !== null ? (
-                                <Text style={styles.scoreText}>
-                                  <Text style={styles.scoreTextMain}>{a.studentScore}</Text>/{a.maxScore}
-                                </Text>
-                              ) : (
-                                <Text style={styles.pendingScoreText}>--/{a.maxScore}</Text>
-                              )}
-                            </View>
-                          </View>
-                        ))
-                      )}
-                    </View>
-                  )}
-
-                  {/* TAB CONTENT: ABSENCES */}
-                  {activeTab === 'absences' && (
-                    <View style={styles.tabContentContainer}>
-                      {detail.absences === 0 ? (
-                        <View style={styles.perfectBanner}>
-                          <Icon name="check-circle" size={24} color="#4CAF50" />
-                          <Text style={styles.perfectTitle}>Tuyệt vời! Chuyên cần 100%</Text>
-                          <Text style={styles.perfectSubtitle}>Bạn không nghỉ học buổi nào của học phần này.</Text>
+                            ))
+                          )}
                         </View>
-                      ) : (
-                        detail.absentLogs.map((log) => (
-                          <View key={log.id} style={styles.absenceItem}>
-                            <View style={styles.absenceLeft}>
-                              <Icon name="calendar-times-o" size={16} color="#F44336" />
-                              <Text style={styles.absenceText}>Buổi học số {log.lectureNumber}</Text>
-                            </View>
-                            <Text style={styles.absenceDate}>{log.date} - {log.time}</Text>
-                          </View>
-                        ))
                       )}
                     </View>
                   )}
                 </View>
-              )}
-            </View>
-          );
-        })
+              );
+            })
+          )}
+        </ScrollView>
       )}
-    </ScrollView>
-  )}
     </View>
   );
 }
@@ -412,7 +551,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginHorizontal: 4,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: {width: 0, height: 1},
     shadowOpacity: 0.1,
     shadowRadius: 2,
     elevation: 2,
@@ -453,7 +592,7 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     marginBottom: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.05,
     shadowRadius: 5,
     elevation: 3,

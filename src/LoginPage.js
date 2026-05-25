@@ -1,11 +1,24 @@
-import React, { useState } from 'react';
-import { TextInput, TouchableOpacity, View, Text, KeyboardAvoidingView, StyleSheet, Alert, ActivityIndicator } from 'react-native';
-import { storeData, getData } from './Utility';
+import React, {useState} from 'react';
+import {
+  TextInput,
+  TouchableOpacity,
+  View,
+  Text,
+  KeyboardAvoidingView,
+  StyleSheet,
+  Alert,
+  ActivityIndicator,
+} from 'react-native';
+import {storeData, getData} from './Utility';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { HOST, API_URL } from '@env'; 
 import axios from 'axios';
+import {
+  API_BASE_URL,
+  KEYCLOAK_CLIENT_ID,
+  KEYCLOAK_TOKEN_ENDPOINT,
+} from './config';
 
-export default function LoginPage({ navigation }) {
+export default function LoginPage({navigation}) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -15,55 +28,63 @@ export default function LoginPage({ navigation }) {
     const finalPassword = customPassword || password;
 
     if (!finalUsername.trim() || !finalPassword.trim()) {
-      Alert.alert('Thông báo', 'Vui lòng điền đầy đủ tên đăng nhập và mật khẩu!');
+      Alert.alert(
+        'Thông báo',
+        'Vui lòng điền đầy đủ tên đăng nhập và mật khẩu!',
+      );
       return;
     }
 
     console.log('Username:', finalUsername);
     const myHeaders = new Headers();
-    myHeaders.append("Content-Type", "application/x-www-form-urlencoded");
+    myHeaders.append('Content-Type', 'application/x-www-form-urlencoded');
 
-    const client_id = "graduation_thesis_ver2";
-    const client_secret = "Tj5zNU17UX9Ak1d4lLulx9VcXSSdHJwC";
-    const urlencoded = `grant_type=password&client_id=${client_id}&client_secret=${client_secret}&username=${finalUsername}&password=${finalPassword}`;
-    
+    const urlencoded = new URLSearchParams({
+      grant_type: 'password',
+      client_id: KEYCLOAK_CLIENT_ID,
+      username: finalUsername,
+      password: finalPassword,
+    }).toString();
+
     const requestOptions = {
-      method: "POST",
+      method: 'POST',
       headers: myHeaders,
       body: urlencoded,
-      redirect: "follow"
+      redirect: 'follow',
     };
 
-    const tokenUrl = HOST.includes('thuvienso.io.vn')
-      ? `${HOST}/realms/hung2004/protocol/openid-connect/token`
-      : `${HOST}:9000/realms/hung2004/protocol/openid-connect/token`;
-
     setIsLoading(true);
-    fetch(tokenUrl, requestOptions)
-      .then((response) => {
+    fetch(KEYCLOAK_TOKEN_ENDPOINT, requestOptions)
+      .then(response => {
         if (!response.ok) {
           throw new Error('Tên đăng nhập hoặc mật khẩu không đúng');
         }
         return response.json();
       })
-      .then(async (data) => {
+      .then(async data => {
         if (!data.access_token) {
           throw new Error('Missing access token');
         }
-        
+
         await AsyncStorage.setItem('accessToken', data.access_token);
-        
+
         // Fetch student profile to verify completed profile status
         try {
           const config = {
             headers: {
-              'Authorization': 'Bearer ' + data.access_token
-            }
+              Authorization: 'Bearer ' + data.access_token,
+            },
           };
-          const profileResponse = await axios.get(`${API_URL}/student/profile`, config);
+          const profileResponse = await axios.get(
+            `${API_BASE_URL}/student/profile`,
+            config,
+          );
           const profileData = profileResponse.data;
-          console.log('Student Profile Completion status:', profileData?.profileCompleted);
-          
+          console.log(
+            'Student Profile Completion status:',
+            profileData?.profileCompleted,
+          );
+
           if (profileData && profileData.profileCompleted === false) {
             navigation.replace('CompleteProfile');
           } else {
@@ -75,9 +96,12 @@ export default function LoginPage({ navigation }) {
           navigation.replace('Home');
         }
       })
-      .catch((error) => {
+      .catch(error => {
         console.error(error);
-        Alert.alert('Lỗi đăng nhập', 'Tên đăng nhập hoặc mật khẩu không chính xác.');
+        Alert.alert(
+          'Lỗi đăng nhập',
+          'Tên đăng nhập hoặc mật khẩu không chính xác.',
+        );
       })
       .finally(() => {
         setIsLoading(false);
@@ -92,22 +116,22 @@ export default function LoginPage({ navigation }) {
 
       <View style={styles.signInZone}>
         <View style={styles.inputContainer}>
-          <TextInput 
-            style={styles.textInput} 
-            placeholder="Your Email / Username" 
+          <TextInput
+            style={styles.textInput}
+            placeholder="Your Email / Username"
             value={username}
-            onChangeText={setUsername} 
+            onChangeText={setUsername}
             placeholderTextColor="#C7C7CD"
             autoCapitalize="none"
           />
         </View>
         <View style={styles.inputContainer}>
-          <TextInput 
-            style={styles.textInput} 
-            placeholder="Password" 
-            secureTextEntry={true} 
+          <TextInput
+            style={styles.textInput}
+            placeholder="Password"
+            secureTextEntry={true}
             value={password}
-            onChangeText={setPassword} 
+            onChangeText={setPassword}
             placeholderTextColor="#C7C7CD"
             autoCapitalize="none"
           />
@@ -117,18 +141,16 @@ export default function LoginPage({ navigation }) {
       <View style={styles.socialZone}>
         <Text style={styles.socialTitle}>Đăng nhập nhanh sinh viên bằng</Text>
         <View style={styles.socialButtonRow}>
-          <TouchableOpacity 
-            style={styles.googleButton} 
+          <TouchableOpacity
+            style={styles.googleButton}
             onPress={() => signIn('google_student', 'password')}
-            disabled={isLoading}
-          >
+            disabled={isLoading}>
             <Text style={styles.googleButtonText}>Google</Text>
           </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.facebookButton} 
+          <TouchableOpacity
+            style={styles.facebookButton}
             onPress={() => signIn('facebook_student', 'password')}
-            disabled={isLoading}
-          >
+            disabled={isLoading}>
             <Text style={styles.facebookButtonText}>Facebook</Text>
           </TouchableOpacity>
         </View>
@@ -140,13 +162,18 @@ export default function LoginPage({ navigation }) {
             {isLoading && <ActivityIndicator size="large" color="#8A4C7D" />}
           </View>
           <View style={styles.signInButtonView}>
-            <TouchableOpacity style={styles.arrowButton} onPress={() => signIn()} disabled={isLoading}>
+            <TouchableOpacity
+              style={styles.arrowButton}
+              onPress={() => signIn()}
+              disabled={isLoading}>
               <Text style={styles.arrowText}>&rarr;</Text>
             </TouchableOpacity>
           </View>
         </View>
         <View style={styles.row2Bot}>
-          <TouchableOpacity style={styles.signUp} onPress={() => navigation.navigate('SignUp')}>
+          <TouchableOpacity
+            style={styles.signUp}
+            onPress={() => navigation.navigate('SignUp')}>
             <Text style={styles.signUpText}>Sign Up</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.nothing1}></TouchableOpacity>
@@ -162,25 +189,25 @@ export default function LoginPage({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FEABAE",
-    alignItems: "center",
-    justifyContent: "center",
+    backgroundColor: '#FEABAE',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   logoZone: {
     flex: 250,
-    justifyContent: "center",
+    justifyContent: 'center',
     width: '80%',
     paddingLeft: 10,
   },
   logoText: {
-    color: "#FFFFFF",
+    color: '#FFFFFF',
     fontSize: 50,
-    fontWeight: "bold",
-    fontFamily: "Futura Hv Bt",
+    fontWeight: 'bold',
+    fontFamily: 'Futura Hv Bt',
   },
   signInZone: {
     flex: 150,
-    justifyContent: "center",
+    justifyContent: 'center',
     width: '80%',
     paddingHorizontal: 10,
   },
@@ -229,7 +256,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: 6,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: {width: 0, height: 1},
     shadowOpacity: 0.1,
     shadowRadius: 2,
     elevation: 2,
@@ -248,7 +275,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginLeft: 6,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: {width: 0, height: 1},
     shadowOpacity: 0.1,
     shadowRadius: 2,
     elevation: 2,
@@ -260,19 +287,19 @@ const styles = StyleSheet.create({
   },
   bottomZone: {
     flex: 250,
-    justifyContent: "center",
+    justifyContent: 'center',
     width: '80%',
   },
   row1Bot: {
     flex: 3,
-    flexDirection: "row",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
   },
   row2Bot: {
     flex: 1,
-    flexDirection: "row",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     marginTop: 10,
   },
   nothing: {
@@ -297,8 +324,8 @@ const styles = StyleSheet.create({
   arrowText: {
     fontSize: 40,
     color: '#fff',
-    position: 'absolute', 
-    top: -2, 
+    position: 'absolute',
+    top: -2,
     left: 12,
   },
   signUp: {
@@ -315,9 +342,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   signUpText: {
-    color: "#000000",
+    color: '#000000',
     fontSize: 16,
-    fontWeight: "bold",
-    fontFamily: "Futura Hv Bt",
+    fontWeight: 'bold',
+    fontFamily: 'Futura Hv Bt',
   },
 });
