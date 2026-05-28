@@ -7,7 +7,10 @@ import {
   StyleSheet,
   Alert,
   useColorScheme,
+  ScrollView,
+  KeyboardAvoidingView,
 } from 'react-native';
+import Icon from 'react-native-vector-icons/FontAwesome';
 import {getData, storeData, getThemeColors} from './Utility';
 import {
   API_BASE_URL,
@@ -23,6 +26,8 @@ export default function SignUpPage({navigation}) {
   const [msgv, setMsgv] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [securePassword, setSecurePassword] = useState(true);
+  const [secureConfirmPassword, setSecureConfirmPassword] = useState(true);
 
   const isDark = useColorScheme() === 'dark';
   const theme = getThemeColors(isDark);
@@ -56,12 +61,12 @@ export default function SignUpPage({navigation}) {
 
   const signUp = async () => {
     if (password !== confirmPassword) {
-      console.error('Passwords do not match');
+      Alert.alert('Lỗi', 'Mật khẩu xác nhận không khớp');
       return;
     }
     //check null
     if (!username || !email || !firstName || !lastName || !msgv || !password) {
-      console.error('Please fill in all fields');
+      Alert.alert('Thông báo', 'Vui lòng nhập đầy đủ các trường thông tin');
       return;
     }
 
@@ -71,7 +76,6 @@ export default function SignUpPage({navigation}) {
       'Authorization',
       'Bearer ' + (await getData('anonymousToken')),
     );
-    console.log(myHeaders);
 
     const raw = JSON.stringify({
       username: username,
@@ -94,171 +98,226 @@ export default function SignUpPage({navigation}) {
         response.text();
         console.log(response.status);
         if (response.status === 500) {
-          console.error(
-            'Sign up failed because email or username already exists',
-          );
           Alert.alert(
-            'Sign up failed because email or username already exists',
+            'Lỗi đăng ký',
+            'Tài khoản đăng ký thất bại do email hoặc tên đăng nhập đã tồn tại',
           );
           return;
         }
         //ask user to do you want to login now
-        Alert.alert('Sign up successful', 'Do you want to login now?', [
+        Alert.alert('Đăng ký thành công', 'Bạn có muốn đăng nhập ngay bây giờ?', [
           {
-            text: 'No',
+            text: 'Không',
             onPress: () => console.log('No Pressed'),
             style: 'cancel',
           },
-          {text: 'Yes', onPress: () => navigation.navigate('Login')},
+          {text: 'Có', onPress: () => navigation.navigate('Login')},
         ]);
       })
-      .then(result => console.log(result))
       .catch(error => console.error(error));
-    console.log('Sign up successful');
   };
-
-  const goToLoginPage = () => {
-    navigation.navigate('Login');
-  };
-
-  const textInputStyle = [
-    styles.textInput,
-    {
-      backgroundColor: theme.inputBg,
-      color: theme.inputText,
-      borderColor: theme.border,
-    }
-  ];
 
   return (
-    <View style={[styles.container, {backgroundColor: theme.bg}]}>
-      <View style={styles.logoZone}>
-        <Text style={[styles.logoText, {color: theme.text}]}>Sign Up</Text>
-      </View>
-      <View style={styles.signUpZone}>
-        <TextInput
-          style={textInputStyle}
-          placeholder="Tên đăng nhập"
-          placeholderTextColor={theme.placeholder}
-          onChangeText={val => setUsername(val)}
-        />
-        <TextInput
-          style={textInputStyle}
-          placeholder="Email"
-          placeholderTextColor={theme.placeholder}
-          onChangeText={val => setEmail(val)}
-        />
-
-        <View style={styles.nameContainer}>
-          <TextInput
-            style={[textInputStyle, styles.nameInput]}
-            placeholder="Họ"
-            placeholderTextColor={theme.placeholder}
-            onChangeText={val => setLastName(val)}
-          />
-          <TextInput
-            style={[textInputStyle, styles.nameInput]}
-            placeholder="Tên"
-            placeholderTextColor={theme.placeholder}
-            onChangeText={val => setFirstName(val)}
-          />
+    <KeyboardAvoidingView style={[styles.container, {backgroundColor: theme.bg}]} behavior="padding">
+      <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+        <View style={styles.headerContainer}>
+          <Text style={[styles.logoText, {color: theme.text}]}>Đăng Ký</Text>
+          <Text style={[styles.tagline, {color: theme.textSecondary}]}>Tạo tài khoản Sinh viên của bạn</Text>
         </View>
 
-        <TextInput
-          style={textInputStyle}
-          placeholder="MSSV"
-          placeholderTextColor={theme.placeholder}
-          onChangeText={val => setMsgv(val)}
-        />
-        <TextInput
-          style={textInputStyle}
-          placeholder="Password"
-          placeholderTextColor={theme.placeholder}
-          secureTextEntry={true}
-          onChangeText={val => setPassword(val)}
-        />
-        <TextInput
-          style={textInputStyle}
-          placeholder="Confirm Password"
-          placeholderTextColor={theme.placeholder}
-          secureTextEntry={true}
-          onChangeText={val => setConfirmPassword(val)}
-        />
+        <View style={[styles.formCard, {backgroundColor: theme.card, borderColor: theme.border}]}>
+          
+          <View style={[styles.inputWrapper, {backgroundColor: theme.inputBg, borderColor: theme.border}]}>
+            <Icon name="user-o" size={16} color={theme.placeholder} style={styles.inputIcon} />
+            <TextInput
+              style={[styles.textInput, {color: theme.inputText}]}
+              placeholder="Tên đăng nhập"
+              placeholderTextColor={theme.placeholder}
+              value={username}
+              onChangeText={setUsername}
+              autoCapitalize="none"
+            />
+          </View>
 
-        <TouchableOpacity style={[styles.signUpButton, {backgroundColor: theme.primary}]} onPress={signUp}>
-          <Text style={styles.signUpButtonText}>Sign Up</Text>
-        </TouchableOpacity>
+          <View style={[styles.inputWrapper, {backgroundColor: theme.inputBg, borderColor: theme.border}]}>
+            <Icon name="envelope-o" size={16} color={theme.placeholder} style={styles.inputIcon} />
+            <TextInput
+              style={[styles.textInput, {color: theme.inputText}]}
+              placeholder="Email"
+              placeholderTextColor={theme.placeholder}
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+          </View>
 
-        <TouchableOpacity style={[styles.loginButton, {borderColor: theme.secondary}]} onPress={goToLoginPage}>
-          <Text style={[styles.loginButtonText, {color: theme.secondary}]}>Back to Login</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+          <View style={styles.nameRow}>
+            <View style={[styles.inputWrapper, styles.halfInput, {backgroundColor: theme.inputBg, borderColor: theme.border}]}>
+              <TextInput
+                style={[styles.textInput, {color: theme.inputText}]}
+                placeholder="Họ"
+                placeholderTextColor={theme.placeholder}
+                value={lastName}
+                onChangeText={setLastName}
+              />
+            </View>
+            <View style={[styles.inputWrapper, styles.halfInput, {backgroundColor: theme.inputBg, borderColor: theme.border}]}>
+              <TextInput
+                style={[styles.textInput, {color: theme.inputText}]}
+                placeholder="Tên"
+                placeholderTextColor={theme.placeholder}
+                value={firstName}
+                onChangeText={setFirstName}
+              />
+            </View>
+          </View>
+
+          <View style={[styles.inputWrapper, {backgroundColor: theme.inputBg, borderColor: theme.border}]}>
+            <Icon name="id-card-o" size={16} color={theme.placeholder} style={styles.inputIcon} />
+            <TextInput
+              style={[styles.textInput, {color: theme.inputText}]}
+              placeholder="Mã số sinh viên (MSSV)"
+              placeholderTextColor={theme.placeholder}
+              value={msgv}
+              onChangeText={setMsgv}
+              keyboardType="numeric"
+            />
+          </View>
+
+          <View style={[styles.inputWrapper, {backgroundColor: theme.inputBg, borderColor: theme.border}]}>
+            <Icon name="lock" size={18} color={theme.placeholder} style={styles.inputIcon} />
+            <TextInput
+              style={[styles.textInput, {color: theme.inputText}]}
+              placeholder="Mật khẩu"
+              placeholderTextColor={theme.placeholder}
+              secureTextEntry={securePassword}
+              value={password}
+              onChangeText={setPassword}
+              autoCapitalize="none"
+            />
+            <TouchableOpacity onPress={() => setSecurePassword(!securePassword)} style={styles.eyeIcon}>
+              <Icon name={securePassword ? 'eye-slash' : 'eye'} size={16} color={theme.placeholder} />
+            </TouchableOpacity>
+          </View>
+
+          <View style={[styles.inputWrapper, {backgroundColor: theme.inputBg, borderColor: theme.border}]}>
+            <Icon name="lock" size={18} color={theme.placeholder} style={styles.inputIcon} />
+            <TextInput
+              style={[styles.textInput, {color: theme.inputText}]}
+              placeholder="Xác nhận mật khẩu"
+              placeholderTextColor={theme.placeholder}
+              secureTextEntry={secureConfirmPassword}
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              autoCapitalize="none"
+            />
+            <TouchableOpacity onPress={() => setSecureConfirmPassword(!secureConfirmPassword)} style={styles.eyeIcon}>
+              <Icon name={secureConfirmPassword ? 'eye-slash' : 'eye'} size={16} color={theme.placeholder} />
+            </TouchableOpacity>
+          </View>
+
+          <TouchableOpacity style={[styles.signUpButton, {backgroundColor: theme.primary}]} onPress={signUp}>
+            <Text style={styles.signUpButtonText}>Đăng Ký</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={[styles.loginButton, {borderColor: theme.secondary}]} onPress={() => navigation.navigate('Login')}>
+            <Text style={[styles.loginButtonText, {color: theme.secondary}]}>Quay lại Đăng nhập</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
-  logoZone: {
-    flex: 1,
+  scrollContainer: {
+    flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 30,
+    paddingHorizontal: 24,
+    paddingVertical: 32,
+  },
+  headerContainer: {
+    alignItems: 'center',
+    marginBottom: 24,
+    width: '100%',
   },
   logoText: {
-    fontSize: 40,
+    fontSize: 28,
     fontWeight: '800',
-    fontFamily: 'System',
-    letterSpacing: -1,
+    letterSpacing: 0.5,
+    marginBottom: 6,
   },
-  signUpZone: {
-    flex: 4,
-    justifyContent: 'center',
-    width: '80%',
-    marginBottom: 40,
+  tagline: {
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  formCard: {
+    width: '100%',
+    maxWidth: 400,
+    borderRadius: 20,
+    padding: 24,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 8},
+    shadowOpacity: 0.05,
+    shadowRadius: 24,
+    elevation: 6,
+  },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 50,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 16,
+    marginBottom: 12,
+  },
+  inputIcon: {
+    marginRight: 12,
   },
   textInput: {
-    height: 52,
-    width: '100%',
-    paddingHorizontal: 15,
-    marginVertical: 6,
-    borderRadius: 8,
-    borderWidth: 1,
+    flex: 1,
+    height: '100%',
     fontSize: 15,
+    padding: 0,
   },
-  nameContainer: {
+  eyeIcon: {
+    padding: 4,
+  },
+  nameRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     width: '100%',
   },
-  nameInput: {
+  halfInput: {
     width: '48%',
   },
   signUpButton: {
-    marginTop: 16,
     height: 50,
-    borderRadius: 8,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 1},
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    shadowColor: '#0F62FE',
+    shadowOffset: {width: 0, height: 4},
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
+    marginTop: 12,
   },
   signUpButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
+    color: '#FFF',
+    fontSize: 15,
+    fontWeight: '700',
   },
   loginButton: {
     marginTop: 12,
     height: 50,
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 1.5,
     backgroundColor: 'transparent',
     alignItems: 'center',
@@ -266,6 +325,6 @@ const styles = StyleSheet.create({
   },
   loginButtonText: {
     fontSize: 15,
-    fontWeight: 'bold',
+    fontWeight: '700',
   },
 });

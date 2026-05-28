@@ -67,17 +67,18 @@ export const stringToTime = timeString => {
 
 export const getThemeColors = isDark => {
   return {
-    bg: isDark ? '#0B0F19' : '#FAFAFA',
-    bgSecondary: isDark ? '#161B26' : '#F4F4F5',
-    card: isDark ? '#121824' : '#FFFFFF',
-    text: isDark ? '#E5E7EB' : '#1F2937',
-    textSecondary: isDark ? '#9CA3AF' : '#6B7280',
+    bg: isDark ? '#0A0E17' : '#F4F6F9',
+    bgSecondary: isDark ? '#121824' : '#EAEFF5',
+    card: isDark ? '#161D2A' : '#FFFFFF',
+    text: isDark ? '#E2E8F0' : '#1E293B',
+    textSecondary: isDark ? '#94A3B8' : '#64748B',
     textWhite: '#FFFFFF',
-    primary: '#2563EB',
-    secondary: '#7C3AED',
-    border: isDark ? '#1E293B' : '#E4E4E7',
-    inputBg: isDark ? '#0F172A' : '#FFFFFF',
-    inputText: isDark ? '#F9FAFB' : '#1F2937',
-    placeholder: isDark ? '#4B5563' : '#9CA3AF',
+    primary: '#0F62FE',
+    secondary: '#8A3FFC',
+    accent: '#00BAB6',
+    border: isDark ? '#222E45' : '#DFE5EE',
+    inputBg: isDark ? '#0E1420' : '#FFFFFF',
+    inputText: isDark ? '#F8FAFC' : '#0F172A',
+    placeholder: isDark ? '#475569' : '#94A3B8',
   };
 };

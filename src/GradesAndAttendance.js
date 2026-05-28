@@ -87,8 +87,7 @@ export default function GradesAndAttendance() {
             totalAbsCount += absences;
             totalRateSum += rate;
 
-            const absentLogs = logs
-              .filter(l => !l.isAttendance)
+            const mappedAttendanceLogs = logs
               .map(l => {
                 const d = new Date(l.attendanceTime);
                 return {
@@ -99,12 +98,13 @@ export default function GradesAndAttendance() {
                     minute: '2-digit',
                   }),
                   lectureNumber: l.lectureNumber || 1,
+                  isAttendance: l.isAttendance,
                 };
               });
 
             details[course.id] = {
               attendanceLogs: logs,
-              absentLogs,
+              mappedAttendanceLogs,
               assessments,
               attendanceRate: rate,
               presences,
@@ -114,7 +114,7 @@ export default function GradesAndAttendance() {
             console.log(`Lỗi load chi tiết lớp ${course.id}:`, err);
             details[course.id] = {
               attendanceLogs: [],
-              absentLogs: [],
+              mappedAttendanceLogs: [],
               assessments: [],
               attendanceRate: 100,
               presences: 0,
@@ -417,7 +417,7 @@ export default function GradesAndAttendance() {
                               activeTab === 'absences' &&
                                 styles.activeTabButtonText,
                             ]}>
-                            Ngày vắng ({detail.absences})
+                            Chuyên cần ({detail.presences}/{detail.presences + detail.absences})
                           </Text>
                         </TouchableOpacity>
                       </View>
@@ -470,34 +470,27 @@ export default function GradesAndAttendance() {
                         </View>
                       )}
 
-                      {/* TAB CONTENT: ABSENCES */}
+                      {/* TAB CONTENT: ATTENDANCE HISTORY */}
                       {activeTab === 'absences' && (
                         <View style={styles.tabContentContainer}>
-                          {detail.absences === 0 ? (
-                            <View style={styles.perfectBanner}>
-                              <Icon
-                                name="check-circle"
-                                size={24}
-                                color="#4CAF50"
-                              />
-                              <Text style={styles.perfectTitle}>
-                                Tuyệt vời! Chuyên cần 100%
-                              </Text>
-                              <Text style={styles.perfectSubtitle}>
-                                Bạn không nghỉ học buổi nào của học phần này.
-                              </Text>
-                            </View>
+                          {detail.mappedAttendanceLogs.length === 0 ? (
+                            <Text style={styles.noDataText}>
+                              Chưa có buổi học nào được điểm danh.
+                            </Text>
                           ) : (
-                            detail.absentLogs.map(log => (
-                              <View key={log.id} style={styles.absenceItem}>
+                            detail.mappedAttendanceLogs.map(log => (
+                              <View key={log.id} style={[styles.absenceItem, log.isAttendance ? {borderColor: '#C8E6C9', backgroundColor: '#F9FFF9'} : {borderColor: '#FFEBEB', backgroundColor: '#FFFAFA'}]}>
                                 <View style={styles.absenceLeft}>
                                   <Icon
-                                    name="calendar-times-o"
+                                    name={log.isAttendance ? "check-circle" : "times-circle"}
                                     size={16}
-                                    color="#F44336"
+                                    color={log.isAttendance ? "#4CAF50" : "#F44336"}
                                   />
-                                  <Text style={styles.absenceText}>
+                                  <Text style={[styles.absenceText, {marginLeft: 8}]}>
                                     Buổi học số {log.lectureNumber}
+                                  </Text>
+                                  <Text style={{fontSize: 11, color: log.isAttendance ? '#2E7D32' : '#C62828', fontWeight: 'bold', marginLeft: 10}}>
+                                    ({log.isAttendance ? 'Đi học' : 'Vắng mặt'})
                                   </Text>
                                 </View>
                                 <Text style={styles.absenceDate}>

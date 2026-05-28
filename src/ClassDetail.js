@@ -10,17 +10,20 @@ import {
   Alert,
   Platform,
   PermissionsAndroid,
+  useColorScheme,
 } from 'react-native';
 import React, {useState, useEffect} from 'react';
 import {API_URL} from '@env';
 import axios from 'axios';
 import Icon from 'react-native-vector-icons/FontAwesome';
-import {getData, storeData, formatToView, convertTime} from './Utility';
+import {getData, storeData, formatToView, convertTime, getThemeColors} from './Utility';
 import {useNavigation, useFocusEffect} from '@react-navigation/native';
 import ClassDocuments from './ClassDocuments';
 import Geolocation from 'react-native-geolocation-service';
 
 export default function ClassDetail() {
+  const isDark = useColorScheme() === 'dark';
+  const theme = getThemeColors(isDark);
   const Separator = () => <View style={{height: 10}} />;
   const navigation = useNavigation();
   const [attendanceList, setAttendanceList] = useState([]);
@@ -355,15 +358,15 @@ export default function ClassDetail() {
 
   return (
     <>
-      <View style={styles.classInfoContainer}>
-        <Text style={styles.classInfoText}>Mã lớp: {courseCode}</Text>
-        <Text style={styles.classInfoText}>Môn học: {subject}</Text>
-        <Text style={styles.classInfoText}>Mô tả: {description}</Text>
+      <View style={[styles.classInfoContainer, {backgroundColor: theme.card, borderColor: theme.border}]}>
+        <Text style={[styles.classInfoText, {color: theme.text}]}>Mã lớp: {courseCode}</Text>
+        <Text style={[styles.classInfoText, {color: theme.text}]}>Môn học: {subject}</Text>
+        <Text style={[styles.classInfoText, {color: theme.textSecondary}]}>Mô tả: {description}</Text>
       </View>
 
-      <View style={styles.activeBar}>
+      <View style={[styles.activeBar, {backgroundColor: theme.bg}]}>
         <TouchableOpacity
-          style={styles.addButton}
+          style={[styles.addButton, {backgroundColor: theme.primary}]}
           onPress={() => navigation.navigate('ClassDiscussion')}>
           <Icon
             name="comments"
@@ -376,17 +379,17 @@ export default function ClassDetail() {
       </View>
 
       {/* Segmented Tab Bar */}
-      <View style={styles.tabContainer}>
+      <View style={[styles.tabContainer, {backgroundColor: theme.card, borderColor: theme.border}]}>
         <TouchableOpacity
           style={[
             styles.tabButton,
-            activeTab === 'attendance' && styles.activeTabButton,
+            activeTab === 'attendance' && {backgroundColor: theme.primary},
           ]}
           onPress={() => setActiveTab('attendance')}>
           <Text
             style={[
               styles.tabButtonText,
-              activeTab === 'attendance' && styles.activeTabButtonText,
+              activeTab === 'attendance' ? {color: '#FFFFFF'} : {color: theme.textSecondary},
             ]}>
             Nhật ký chuyên cần
           </Text>
@@ -394,7 +397,7 @@ export default function ClassDetail() {
         <TouchableOpacity
           style={[
             styles.tabButton,
-            activeTab === 'assessment' && styles.activeTabButton,
+            activeTab === 'assessment' && {backgroundColor: theme.primary},
           ]}
           onPress={() => {
             setActiveTab('assessment');
@@ -403,7 +406,7 @@ export default function ClassDetail() {
           <Text
             style={[
               styles.tabButtonText,
-              activeTab === 'assessment' && styles.activeTabButtonText,
+              activeTab === 'assessment' ? {color: '#FFFFFF'} : {color: theme.textSecondary},
             ]}>
             Bài thi & Bài tập
           </Text>
@@ -411,7 +414,7 @@ export default function ClassDetail() {
         <TouchableOpacity
           style={[
             styles.tabButton,
-            activeTab === 'document' && styles.activeTabButton,
+            activeTab === 'document' && {backgroundColor: theme.primary},
           ]}
           onPress={() => {
             setActiveTab('document');
@@ -419,7 +422,7 @@ export default function ClassDetail() {
           <Text
             style={[
               styles.tabButtonText,
-              activeTab === 'document' && styles.activeTabButtonText,
+              activeTab === 'document' ? {color: '#FFFFFF'} : {color: theme.textSecondary},
             ]}>
             Tài liệu
           </Text>
@@ -428,28 +431,28 @@ export default function ClassDetail() {
 
       {activeTab === 'attendance' ? (
         <>
-          <View style={[styles.container]}>
-            <Text style={styles.text1}>Danh sách buổi điểm danh của bạn</Text>
+          <View style={[styles.container, {backgroundColor: theme.bg}]}>
+            <Text style={[styles.text1, {color: theme.text}]}>Danh sách buổi điểm danh của bạn</Text>
           </View>
-          <View style={[styles.studentList]}>
+          <View style={[styles.studentList, {backgroundColor: theme.bg}]}>
             <FlatList
               data={attendanceList}
               renderItem={({item}) => (
-                <View style={styles.card}>
+                <View style={[styles.card, {backgroundColor: theme.card, borderColor: theme.border, borderWidth: 1, elevation: 2, shadowOpacity: 0.03}]}>
                   <View style={styles.infoRow}>
-                    <Text style={styles.infoLabel}>Thời gian điểm danh:</Text>
-                    <Text style={styles.infoValue}>
+                    <Text style={[styles.infoLabel, {color: theme.text}]}>Thời gian điểm danh:</Text>
+                    <Text style={[styles.infoValue, {color: theme.textSecondary}]}>
                       {formatToView(convertTime(item.attendanceTime))}
                     </Text>
                   </View>
                   <View style={styles.infoRow}>
-                    <Text style={styles.infoLabel}>Buổi học số:</Text>
-                    <Text style={styles.infoValue}>{item.lectureNumber}</Text>
+                    <Text style={[styles.infoLabel, {color: theme.text}]}>Buổi học số:</Text>
+                    <Text style={[styles.infoValue, {color: theme.textSecondary}]}>{item.lectureNumber}</Text>
                   </View>
                   <View style={styles.infoRow}>
-                    <Text style={styles.infoLabel}>Đi/Vắng:</Text>
-                    <Text style={styles.infoValue}>
-                      {item.isAttendance ? 'Đi' : 'Vắng'}
+                    <Text style={[styles.infoLabel, {color: theme.text}]}>Đi/Vắng:</Text>
+                    <Text style={[styles.infoValue, {color: item.isAttendance ? '#10B981' : '#EF4444', fontWeight: 'bold'}]}>
+                      {item.isAttendance ? 'Đi học' : 'Vắng mặt'}
                     </Text>
                   </View>
                 </View>
@@ -462,14 +465,14 @@ export default function ClassDetail() {
         </>
       ) : activeTab === 'assessment' ? (
         <>
-          <View style={[styles.container]}>
-            <Text style={styles.text1}>Bài thi & Bài tập học phần</Text>
+          <View style={[styles.container, {backgroundColor: theme.bg}]}>
+            <Text style={[styles.text1, {color: theme.text}]}>Bài thi & Bài tập học phần</Text>
           </View>
-          <View style={[styles.studentList]}>
+          <View style={[styles.studentList, {backgroundColor: theme.bg}]}>
             {isAssessmentsLoading ? (
               <View style={styles.loaderContainer}>
-                <ActivityIndicator size="large" color="#34568B" />
-                <Text style={{marginTop: 10, color: '#7F8C8D'}}>
+                <ActivityIndicator size="large" color={theme.primary} />
+                <Text style={{marginTop: 10, color: theme.textSecondary}}>
                   Đang tải bài thi...
                 </Text>
               </View>

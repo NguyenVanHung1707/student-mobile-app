@@ -9,7 +9,10 @@ import {
   Alert,
   ActivityIndicator,
   useColorScheme,
+  ScrollView,
+  Dimensions,
 } from 'react-native';
+import Icon from 'react-native-vector-icons/FontAwesome';
 import {storeData, getData, getThemeColors} from './Utility';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
@@ -18,6 +21,8 @@ import {
   KEYCLOAK_CLIENT_ID,
   KEYCLOAK_TOKEN_ENDPOINT,
 } from './config';
+
+const {width} = Dimensions.get('window');
 
 const base64Decode = (str) => {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
@@ -63,6 +68,7 @@ export default function LoginPage({navigation}) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [securePassword, setSecurePassword] = useState(true);
 
   const isDark = useColorScheme() === 'dark';
   const theme = getThemeColors(isDark);
@@ -176,77 +182,101 @@ export default function LoginPage({navigation}) {
 
   return (
     <KeyboardAvoidingView style={[styles.container, {backgroundColor: theme.bg}]} behavior="padding">
-      <View style={styles.logoZone}>
-        <Text style={[styles.logoText, {color: theme.text}]}>BKHN</Text>
-        <Text style={[styles.subLogoText, {color: theme.primary}]}>Student Portal</Text>
-      </View>
-
-      <View style={styles.signInZone}>
-        <View style={styles.inputContainer}>
-          <TextInput
-            style={[styles.textInput, {backgroundColor: theme.inputBg, color: theme.inputText, borderColor: theme.border}]}
-            placeholder="Your Email / Username"
-            value={username}
-            onChangeText={setUsername}
-            placeholderTextColor={theme.placeholder}
-            autoCapitalize="none"
-          />
+      <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+        <View style={styles.headerContainer}>
+          <View style={[styles.logoIconBg, {backgroundColor: theme.bgSecondary}]}>
+            <Icon name="graduation-cap" size={40} color={theme.primary} />
+          </View>
+          <Text style={[styles.logoText, {color: theme.text}]}>BKHN</Text>
+          <Text style={[styles.subLogoText, {color: theme.primary}]}>STUDENT PORTAL</Text>
+          <Text style={[styles.tagline, {color: theme.textSecondary}]}>Hệ thống thi & điểm danh AI thông minh</Text>
         </View>
-        <View style={styles.inputContainer}>
-          <TextInput
-            style={[styles.textInput, {backgroundColor: theme.inputBg, color: theme.inputText, borderColor: theme.border}]}
-            placeholder="Password"
-            secureTextEntry={true}
-            value={password}
-            onChangeText={setPassword}
-            placeholderTextColor={theme.placeholder}
-            autoCapitalize="none"
-          />
-        </View>
-      </View>
 
-      <View style={styles.socialZone}>
-        <Text style={[styles.socialTitle, {color: theme.secondary}]}>Đăng nhập nhanh sinh viên bằng</Text>
-        <View style={styles.socialButtonRow}>
+        <View style={[styles.formCard, {backgroundColor: theme.card, borderColor: theme.border}]}>
+          <Text style={[styles.formTitle, {color: theme.text}]}>Đăng Nhập</Text>
+          
+          <View style={[styles.inputWrapper, {backgroundColor: theme.inputBg, borderColor: theme.border}]}>
+            <Icon name="user-o" size={18} color={theme.placeholder} style={styles.inputIcon} />
+            <TextInput
+              style={[styles.textInput, {color: theme.inputText}]}
+              placeholder="Username / Email"
+              value={username}
+              onChangeText={setUsername}
+              placeholderTextColor={theme.placeholder}
+              autoCapitalize="none"
+            />
+          </View>
+
+          <View style={[styles.inputWrapper, {backgroundColor: theme.inputBg, borderColor: theme.border}]}>
+            <Icon name="lock" size={18} color={theme.placeholder} style={styles.inputIcon} />
+            <TextInput
+              style={[styles.textInput, {color: theme.inputText}]}
+              placeholder="Mật khẩu"
+              secureTextEntry={securePassword}
+              value={password}
+              onChangeText={setPassword}
+              placeholderTextColor={theme.placeholder}
+              autoCapitalize="none"
+            />
+            <TouchableOpacity onPress={() => setSecurePassword(!securePassword)} style={styles.eyeIcon}>
+              <Icon name={securePassword ? 'eye-slash' : 'eye'} size={18} color={theme.placeholder} />
+            </TouchableOpacity>
+          </View>
+
           <TouchableOpacity
-            style={styles.googleButton}
-            onPress={() => signIn('google_student', 'password')}
-            disabled={isLoading}>
-            <Text style={styles.googleButtonText}>Google</Text>
+            style={[styles.primaryButton, {backgroundColor: theme.primary}, isLoading && styles.disabledButton]}
+            onPress={() => signIn()}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <Text style={styles.primaryButtonText}>ĐĂNG NHẬP SSO</Text>
+            )}
           </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.facebookButton}
-            onPress={() => signIn('facebook_student', 'password')}
-            disabled={isLoading}>
-            <Text style={styles.facebookButtonText}>Facebook</Text>
+
+          <View style={styles.forgotRow}>
+            <TouchableOpacity style={styles.forgotBtn}>
+              <Text style={[styles.forgotText, {color: theme.textSecondary}]}>Quên mật khẩu?</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View style={styles.socialContainer}>
+          <View style={styles.dividerRow}>
+            <View style={[styles.dividerLine, {backgroundColor: theme.border}]} />
+            <Text style={[styles.dividerText, {color: theme.textSecondary}]}>HOẶC ĐĂNG NHẬP NHANH BẰNG</Text>
+            <View style={[styles.dividerLine, {backgroundColor: theme.border}]} />
+          </View>
+
+          <View style={styles.socialButtonRow}>
+            <TouchableOpacity
+              style={[styles.socialButton, styles.googleBtn, {borderColor: theme.border}]}
+              onPress={() => signIn('google_student', 'password')}
+              disabled={isLoading}
+            >
+              <Icon name="google" size={18} color="#EA4335" style={styles.socialIcon} />
+              <Text style={styles.googleButtonText}>Google</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[styles.socialButton, styles.facebookBtn]}
+              onPress={() => signIn('facebook_student', 'password')}
+              disabled={isLoading}
+            >
+              <Icon name="facebook" size={18} color="#FFFFFF" style={styles.socialIcon} />
+              <Text style={styles.facebookButtonText}>Facebook</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View style={styles.footerRow}>
+          <Text style={[styles.footerText, {color: theme.textSecondary}]}>Chưa có tài khoản?</Text>
+          <TouchableOpacity onPress={() => navigation.navigate('SignUp')} style={styles.signUpBtn}>
+            <Text style={[styles.signUpText, {color: theme.secondary}]}> Đăng ký ngay</Text>
           </TouchableOpacity>
         </View>
-      </View>
-
-      <View style={styles.bottomZone}>
-        <TouchableOpacity
-          style={[styles.primaryButton, {backgroundColor: theme.primary}, isLoading && styles.disabledButton]}
-          onPress={() => signIn()}
-          disabled={isLoading}
-        >
-          {isLoading ? (
-            <ActivityIndicator size="small" color="#FFFFFF" />
-          ) : (
-            <Text style={styles.primaryButtonText}>ĐĂNG NHẬP SSO</Text>
-          )}
-        </TouchableOpacity>
-
-        <View style={styles.row2Bot}>
-          <TouchableOpacity
-            style={styles.signUp}
-            onPress={() => navigation.navigate('SignUp')}>
-            <Text style={[styles.signUpText, {color: theme.secondary}]}>Sign Up</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.forgotPassword}>
-            <Text style={[styles.signUpText, {color: theme.textSecondary}]}>Forgot Password</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
@@ -254,55 +284,139 @@ export default function LoginPage({navigation}) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
-  logoZone: {
-    flex: 3,
+  scrollContainer: {
+    flexGrow: 1,
     justifyContent: 'center',
-    width: '80%',
-    paddingLeft: 10,
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 40,
+  },
+  headerContainer: {
+    alignItems: 'center',
+    marginBottom: 32,
+    width: '100%',
+  },
+  logoIconBg: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 4},
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 4,
   },
   logoText: {
-    fontSize: 48,
-    fontWeight: '800',
-    fontFamily: 'System',
-    letterSpacing: -1,
+    fontSize: 32,
+    fontWeight: '900',
+    letterSpacing: 2,
+    marginBottom: 2,
   },
   subLogoText: {
-    fontSize: 32,
+    fontSize: 16,
     fontWeight: '800',
-    fontFamily: 'System',
-    marginTop: -5,
+    letterSpacing: 4,
+    marginBottom: 8,
   },
-  signInZone: {
-    flex: 2,
-    justifyContent: 'center',
-    width: '80%',
+  tagline: {
+    fontSize: 13,
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  formCard: {
+    width: '100%',
+    maxWidth: 400,
+    borderRadius: 20,
+    padding: 24,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 8},
+    shadowOpacity: 0.05,
+    shadowRadius: 24,
+    elevation: 6,
+    marginBottom: 28,
+  },
+  formTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 52,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 16,
+    marginBottom: 16,
+  },
+  inputIcon: {
+    marginRight: 12,
   },
   textInput: {
-    height: 55,
-    width: '100%',
-    paddingHorizontal: 15,
-    borderRadius: 8,
-    borderWidth: 1,
+    flex: 1,
+    height: '100%',
     fontSize: 15,
+    padding: 0,
   },
-  inputContainer: {
-    marginBottom: 12,
+  eyeIcon: {
+    padding: 4,
   },
-  socialZone: {
-    flex: 1.5,
-    width: '80%',
+  primaryButton: {
+    height: 52,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#0F62FE',
+    shadowOffset: {width: 0, height: 4},
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
+    marginTop: 8,
   },
-  socialTitle: {
+  disabledButton: {
+    opacity: 0.7,
+  },
+  primaryButtonText: {
+    color: '#FFF',
+    fontSize: 15,
+    fontWeight: '700',
+    letterSpacing: 1,
+  },
+  forgotRow: {
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  forgotBtn: {
+    padding: 4,
+  },
+  forgotText: {
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  socialContainer: {
+    width: '100%',
+    maxWidth: 400,
+    marginBottom: 24,
+  },
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+  },
+  dividerText: {
     fontSize: 11,
-    fontWeight: 'bold',
-    fontFamily: 'System',
-    marginBottom: 12,
-    textTransform: 'uppercase',
+    fontWeight: '700',
+    marginHorizontal: 12,
     letterSpacing: 0.5,
   },
   socialButtonRow: {
@@ -310,90 +424,55 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     width: '100%',
   },
-  googleButton: {
+  socialButton: {
     flex: 1,
     height: 48,
-    borderRadius: 8,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 1},
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  googleBtn: {
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#E4E4E7',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 6,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 1},
-    shadowOpacity: 0.05,
-    shadowRadius: 1,
-    elevation: 1,
+    marginRight: 8,
   },
   googleButtonText: {
-    color: '#374151',
-    fontWeight: 'bold',
+    color: '#1E293B',
+    fontWeight: '600',
     fontSize: 14,
   },
-  facebookButton: {
-    flex: 1,
-    height: 48,
-    borderRadius: 8,
+  facebookBtn: {
     backgroundColor: '#1877F2',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: 6,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 1},
-    shadowOpacity: 0.05,
-    shadowRadius: 1,
-    elevation: 1,
+    marginLeft: 8,
   },
   facebookButtonText: {
     color: '#FFFFFF',
-    fontWeight: 'bold',
+    fontWeight: '600',
     fontSize: 14,
   },
-  bottomZone: {
-    flex: 3,
-    justifyContent: 'flex-start',
-    width: '80%',
-    marginTop: 10,
+  socialIcon: {
+    marginRight: 8,
   },
-  primaryButton: {
-    width: '100%',
-    height: 55,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 1},
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  disabledButton: {
-    opacity: 0.8,
-  },
-  primaryButtonText: {
-    color: '#fff',
-    fontSize: 15,
-    fontWeight: 'bold',
-    letterSpacing: 0.5,
-  },
-  row2Bot: {
+  footerRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 20,
-    paddingHorizontal: 5,
-  },
-  signUp: {
     alignItems: 'center',
-    justifyContent: 'center',
+    marginTop: 12,
   },
-  forgotPassword: {
-    alignItems: 'center',
-    justifyContent: 'center',
+  footerText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  signUpBtn: {
+    paddingVertical: 4,
   },
   signUpText: {
     fontSize: 14,
-    fontWeight: 'bold',
-    fontFamily: 'System',
+    fontWeight: '700',
   },
 });

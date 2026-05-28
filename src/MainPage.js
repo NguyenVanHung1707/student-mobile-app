@@ -2,6 +2,8 @@ import React from 'react';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 import {createStackNavigator} from '@react-navigation/stack';
 import Icon from 'react-native-vector-icons/FontAwesome';
+import {useColorScheme} from 'react-native';
+import {getThemeColors} from './Utility';
 import ClassManagement from './ClassManagement';
 import HomePage from './HomePage';
 import ClassDetail from './ClassDetail';
@@ -47,6 +49,9 @@ const ClassManagementStack = () => {
 
 
 export default function MainPage() {
+  const isDark = useColorScheme() === 'dark';
+  const theme = getThemeColors(isDark);
+
   return (
     <Tab.Navigator
       screenOptions={({route}) => ({
@@ -54,27 +59,60 @@ export default function MainPage() {
           let iconName;
 
           if (route.name === 'Điểm danh') {
-            iconName = focused ? 'home' : 'home';
-          } else if (route.name === 'Lớp học của tôi') {
-            iconName = focused ? 'book' : 'book';
+            iconName = 'qrcode';
+          } else if (route.name === 'Lớp học') {
+            iconName = 'university';
           } else if (route.name === 'Lịch học') {
             iconName = 'calendar';
-          } else if (route.name === 'Kết quả học tập') {
-            iconName = focused ? 'graduation-cap' : 'graduation-cap';
-          } else if (route.name === 'Upload Image') {
-            iconName = focused ? 'upload' : 'upload';
+          } else if (route.name === 'Kết quả') {
+            iconName = 'bar-chart';
+          } else if (route.name === 'FaceID') {
+            iconName = 'camera';
           }
 
-          return <Icon name={iconName} size={size} color={color} />;
+          return <Icon name={iconName} size={focused ? size + 2 : size} color={color} />;
         },
-        tabBarActiveTintColor: 'tomato',
-        tabBarInactiveTintColor: 'gray',
+        tabBarActiveTintColor: theme.primary,
+        tabBarInactiveTintColor: theme.textSecondary,
+        tabBarLabelStyle: {
+          fontWeight: '700',
+          fontSize: 11,
+          paddingBottom: 4,
+        },
+        tabBarStyle: {
+          backgroundColor: theme.card,
+          borderTopWidth: 1,
+          borderTopColor: theme.border,
+          height: 62,
+          paddingTop: 6,
+          elevation: 10,
+          shadowColor: '#000',
+          shadowOffset: {width: 0, height: -3},
+          shadowOpacity: 0.08,
+          shadowRadius: 12,
+        },
+        headerStyle: {
+          backgroundColor: theme.card,
+          elevation: 2,
+          shadowColor: '#000',
+          shadowOffset: {width: 0, height: 1},
+          shadowOpacity: 0.05,
+          shadowRadius: 3,
+          borderBottomWidth: 1,
+          borderBottomColor: theme.border,
+        },
+        headerTitleStyle: {
+          color: theme.text,
+          fontWeight: '800',
+          fontSize: 18,
+          letterSpacing: 0.5,
+        },
       })}>
       <Tab.Screen name="Điểm danh" component={HomeScreen} />
-      <Tab.Screen name="Lớp học của tôi" component={ClassManagementStack} />
+      <Tab.Screen name="Lớp học" component={ClassManagementStack} />
       <Tab.Screen name="Lịch học" component={TimetableScreen} options={{headerShown: false}} />
-      <Tab.Screen name="Kết quả học tập" component={GradesAndAttendance} />
-      <Tab.Screen name="Upload Image" component={UploadImageScreen} />
+      <Tab.Screen name="Kết quả" component={GradesAndAttendance} />
+      <Tab.Screen name="FaceID" component={UploadImageScreen} />
     </Tab.Navigator>
   );
 }
