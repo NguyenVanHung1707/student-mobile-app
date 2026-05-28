@@ -8,6 +8,8 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
+  Platform,
+  PermissionsAndroid,
 } from 'react-native';
 import React, {useState, useEffect} from 'react';
 import {API_URL} from '@env';
@@ -16,6 +18,7 @@ import Icon from 'react-native-vector-icons/FontAwesome';
 import {getData, storeData, formatToView, convertTime} from './Utility';
 import {useNavigation, useFocusEffect} from '@react-navigation/native';
 import ClassDocuments from './ClassDocuments';
+import Geolocation from 'react-native-geolocation-service';
 
 export default function ClassDetail() {
   const Separator = () => <View style={{height: 10}} />;
@@ -127,12 +130,96 @@ export default function ClassDetail() {
     }, [activeTab]),
   );
 
-  const handleStartExam = () => {
-    Alert.alert(
-      'Thông báo',
-      'Tính năng làm bài thi có giám sát chống gian lận bằng AI yêu cầu Webcam và Màn hình máy tính lớn để hiệu chuẩn mắt và ghi hình. Vui lòng đăng nhập trang web thuvienso.io.vn trên máy tính để thực hiện bài thi này.',
-      [{text: 'Đồng ý', style: 'default'}],
-    );
+  const requestLocationPermission = async () => {
+    if (Platform.OS === 'ios') {
+      return true;
+    }
+    try {
+      const granted = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+        {
+          title: 'Quyền vị trí bài thi',
+          message: 'Ứng dụng cần quyền định vị GPS để xác thực khoảng cách làm bài thi.',
+          buttonPositive: 'Đồng ý',
+        },
+      );
+      return granted === PermissionsAndroid.RESULTS.GRANTED;
+    } catch (err) {
+      return false;
+    }
+  };
+
+  const getGPSLocation = () =>
+    new Promise(async (resolve, reject) => {
+      Geolocation.getCurrentPosition(
+        position => {
+          resolve({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          });
+        },
+        error => {
+          reject(new Error('Lỗi định vị thiết bị.'));
+        },
+        {enableHighAccuracy: true, timeout: 15000, maximumAge: 10000},
+      );
+    });
+
+  const handleStartExam = async (item) => {
+    if (item.submissionStatus === 'IN_PROGRESS' && item.submissionId) {
+      navigation.navigate('TakeAssessment', {
+        assessmentId: item.id,
+        submissionId: item.submissionId,
+        courseId: classId,
+      });
+      return;
+    }
+
+    try {
+      const token = await getData('accessToken');
+      const config = {
+        headers: {
+          Authorization: 'Bearer ' + token,
+          'Content-Type': 'application/json',
+        },
+      };
+
+      let locationPayload = null;
+      if (item.isLocationRequired) {
+        const hasPermission = await requestLocationPermission();
+        if (!hasPermission) {
+          Alert.alert('Từ chối định vị', 'Bài thi yêu cầu định vị GPS. Vui lòng cấp quyền để bắt đầu!');
+          return;
+        }
+
+        const coords = await getGPSLocation();
+        locationPayload = {
+          latitude: coords.latitude,
+          longitude: coords.longitude,
+          mockLocationDetected: false,
+        };
+      }
+
+      const response = await axios.post(
+        `${API_URL}/assessments/${item.id}/start`,
+        locationPayload,
+        config,
+      );
+
+      const subData = response.data;
+      if (subData && subData.id) {
+        navigation.navigate('TakeAssessment', {
+          assessmentId: item.id,
+          submissionId: subData.id,
+          courseId: classId,
+        });
+      } else {
+        throw new Error('Khởi tạo phiên thi thất bại.');
+      }
+    } catch (err) {
+      console.error(err);
+      Alert.alert('Lỗi bắt đầu thi', err.response?.data?.message || err.message || 'Không thể bắt đầu làm bài.');
+    }
   };
 
   const renderAssessmentItem = ({item}) => {
@@ -219,7 +306,8 @@ export default function ClassDetail() {
           {canTake && !isDeadlinePassed ? (
             <TouchableOpacity
               style={styles.takeExamButton}
-              onPress={handleStartExam}>
+              onPress={() => handleStartExam(item)}>
+
               <Icon
                 name="play"
                 size={14}

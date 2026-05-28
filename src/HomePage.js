@@ -8,15 +8,13 @@ import {
   Alert,
   FlatList,
   TouchableOpacity,
-  PermissionsAndroid,
   ActivityIndicator,
-  Platform,
 } from 'react-native';
 import CheckBox from '@react-native-community/checkbox';
 import axios from 'axios';
 import {API_URL} from '@env';
 import {getData} from './Utility';
-import Geolocation from 'react-native-geolocation-service';
+import {getVerifiedLocation} from './geofenceLocation';
 
 export default function AttendanceForm() {
   const [code, setCode] = useState('');
@@ -51,46 +49,16 @@ export default function AttendanceForm() {
 
   const handleSubmitAnswers = async () => {
     setIsLoading(true);
-    const getCurrentLocation = () => {
-      return new Promise((resolve, reject) => {
-        Geolocation.getCurrentPosition(
-          position => {
-            const {latitude, longitude} = position.coords;
-            resolve({latitude, longitude});
-          },
-          error => {
-            reject(error.message);
-          },
-          {enableHighAccuracy: true, timeout: 20000, maximumAge: 1000},
-        );
-      });
-    };
-
     try {
-      if (Platform.OS === 'android') {
-        const granted = await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-          {
-            title: 'Yêu cầu quyền truy cập vị trí',
-            message:
-              'Ứng dụng cần quyền truy cập vị trí để lấy tọa độ địa lý hiện tại.',
-            buttonNeutral: 'Hỏi lại sau',
-            buttonNegative: 'Hủy bỏ',
-            buttonPositive: 'Đồng ý',
-          },
-        );
-        if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
-          alert('Quyền truy cập vị trí bị từ chối.');
-          return;
-        }
-      }
-
-      const location = await getCurrentLocation();
+      const location = formData?.isLocationRequired
+        ? await getVerifiedLocation()
+        : null;
 
       let submitData = JSON.stringify({
         code: formData.code,
-        latitude: location.latitude, // Gửi latitude
-        longitude: location.longitude, // Gửi longitude
+        latitude: location?.latitude || null,
+        longitude: location?.longitude || null,
+        mockLocationDetected: false,
         answers: answers.map(answer => ({
           id: answer.id,
           isTrue: answer.isTrue,
@@ -116,34 +84,22 @@ export default function AttendanceForm() {
           if (response.status === 200) {
             Alert.alert('Success', 'Bạn đã điểm danh thành công!');
           }
-          if (
-            response.status === 400 &&
-            response.data.message === 'Answer is not correct'
-          ) {
-            Alert.alert('Fail', 'Bạn đã trả lời sai câu hỏi!');
-          }
-          if (
-            response.status === 400 &&
-            response.data.message === 'Location is not correct'
-          ) {
-            Alert.alert('Fail', 'Bạn không ở trong phạm vi điểm danh!');
-          }
         })
         .catch(error => {
           console.log(error);
-          console.log(error.response.data);
-          if (error.response.data.message === 'Answer is not correct') {
+          const message = error.response?.data?.message;
+          console.log(error.response?.data);
+          if (message === 'Answer is not correct') {
             Alert.alert('Fail', 'Bạn đã trả lời sai câu hỏi!');
-          }
-          if (error.response.data.message === 'Location is not correct') {
+          } else if (message === 'Bạn không ở trong phạm vi lớp học') {
             Alert.alert('Fail', 'Bạn không ở trong phạm vi điểm danh!');
+          } else {
+            Alert.alert('Fail', message || 'Nộp điểm danh thất bại!');
           }
         });
     } catch (error) {
       console.error(error);
-      alert(
-        'Lỗi khi lấy vị trí hiện tại. Vui lòng kiểm tra lại quyền truy cập vị trí.',
-      );
+      alert(error.message || 'Lỗi khi lấy vị trí hiện tại.');
       setIsLoading(false);
     }
   };

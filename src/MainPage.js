@@ -8,6 +8,8 @@ import ClassDetail from './ClassDetail';
 import UploadImageScreen from './UploadImageScreen'; // Import the UploadImageScreen
 import ClassDiscussion from './ClassDiscussion';
 import GradesAndAttendance from './GradesAndAttendance';
+import TimetableScreen from './TimetableScreen'; // Import TimetableScreen
+import TakeAssessmentScreen from './TakeAssessmentScreen'; // Import TakeAssessmentScreen
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -34,9 +36,15 @@ const ClassManagementStack = () => {
         component={ClassDiscussion}
         options={{headerShown: false}}
       />
+      <Stack.Screen
+        name="TakeAssessment"
+        component={TakeAssessmentScreen}
+        options={{headerShown: false}}
+      />
     </Stack.Navigator>
   );
 };
+
 
 export default function MainPage() {
   return (
@@ -49,6 +57,8 @@ export default function MainPage() {
             iconName = focused ? 'home' : 'home';
           } else if (route.name === 'Lớp học của tôi') {
             iconName = focused ? 'book' : 'book';
+          } else if (route.name === 'Lịch học') {
+            iconName = 'calendar';
           } else if (route.name === 'Kết quả học tập') {
             iconName = focused ? 'graduation-cap' : 'graduation-cap';
           } else if (route.name === 'Upload Image') {
@@ -62,8 +72,10 @@ export default function MainPage() {
       })}>
       <Tab.Screen name="Điểm danh" component={HomeScreen} />
       <Tab.Screen name="Lớp học của tôi" component={ClassManagementStack} />
+      <Tab.Screen name="Lịch học" component={TimetableScreen} options={{headerShown: false}} />
       <Tab.Screen name="Kết quả học tập" component={GradesAndAttendance} />
       <Tab.Screen name="Upload Image" component={UploadImageScreen} />
     </Tab.Navigator>
   );
 }
+

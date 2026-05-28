@@ -8,10 +8,11 @@ import {
   StyleSheet,
   Alert,
   ActivityIndicator,
+  useColorScheme,
 } from 'react-native';
-import {storeData, getData} from './Utility';
+import {storeData, getData, getThemeColors} from './Utility';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'react-native-axios'; // Note: uses standard axios
+import axios from 'axios';
 import {
   API_BASE_URL,
   KEYCLOAK_CLIENT_ID,
@@ -62,6 +63,9 @@ export default function LoginPage({navigation}) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  const isDark = useColorScheme() === 'dark';
+  const theme = getThemeColors(isDark);
 
   const signIn = (customUsername, customPassword) => {
     const finalUsername = customUsername || username;
@@ -171,37 +175,38 @@ export default function LoginPage({navigation}) {
   };
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior="padding">
+    <KeyboardAvoidingView style={[styles.container, {backgroundColor: theme.bg}]} behavior="padding">
       <View style={styles.logoZone}>
-        <Text style={styles.logoText}>Welcome</Text>
+        <Text style={[styles.logoText, {color: theme.text}]}>BKHN</Text>
+        <Text style={[styles.subLogoText, {color: theme.primary}]}>Student Portal</Text>
       </View>
 
       <View style={styles.signInZone}>
         <View style={styles.inputContainer}>
           <TextInput
-            style={styles.textInput}
+            style={[styles.textInput, {backgroundColor: theme.inputBg, color: theme.inputText, borderColor: theme.border}]}
             placeholder="Your Email / Username"
             value={username}
             onChangeText={setUsername}
-            placeholderTextColor="#C7C7CD"
+            placeholderTextColor={theme.placeholder}
             autoCapitalize="none"
           />
         </View>
         <View style={styles.inputContainer}>
           <TextInput
-            style={styles.textInput}
+            style={[styles.textInput, {backgroundColor: theme.inputBg, color: theme.inputText, borderColor: theme.border}]}
             placeholder="Password"
             secureTextEntry={true}
             value={password}
             onChangeText={setPassword}
-            placeholderTextColor="#C7C7CD"
+            placeholderTextColor={theme.placeholder}
             autoCapitalize="none"
           />
         </View>
       </View>
 
       <View style={styles.socialZone}>
-        <Text style={styles.socialTitle}>Đăng nhập nhanh sinh viên bằng</Text>
+        <Text style={[styles.socialTitle, {color: theme.secondary}]}>Đăng nhập nhanh sinh viên bằng</Text>
         <View style={styles.socialButtonRow}>
           <TouchableOpacity
             style={styles.googleButton}
@@ -219,28 +224,26 @@ export default function LoginPage({navigation}) {
       </View>
 
       <View style={styles.bottomZone}>
-        <View style={styles.row1Bot}>
-          <View style={styles.nothing}>
-            {isLoading && <ActivityIndicator size="large" color="#8A4C7D" />}
-          </View>
-          <View style={styles.signInButtonView}>
-            <TouchableOpacity
-              style={styles.arrowButton}
-              onPress={() => signIn()}
-              disabled={isLoading}>
-              <Text style={styles.arrowText}>&rarr;</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+        <TouchableOpacity
+          style={[styles.primaryButton, {backgroundColor: theme.primary}, isLoading && styles.disabledButton]}
+          onPress={() => signIn()}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          ) : (
+            <Text style={styles.primaryButtonText}>ĐĂNG NHẬP SSO</Text>
+          )}
+        </TouchableOpacity>
+
         <View style={styles.row2Bot}>
           <TouchableOpacity
             style={styles.signUp}
             onPress={() => navigation.navigate('SignUp')}>
-            <Text style={styles.signUpText}>Sign Up</Text>
+            <Text style={[styles.signUpText, {color: theme.secondary}]}>Sign Up</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.nothing1}></TouchableOpacity>
           <TouchableOpacity style={styles.forgotPassword}>
-            <Text style={styles.signUpText}>Forgot Password</Text>
+            <Text style={[styles.signUpText, {color: theme.textSecondary}]}>Forgot Password</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -251,54 +254,54 @@ export default function LoginPage({navigation}) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FEABAE',
     alignItems: 'center',
     justifyContent: 'center',
   },
   logoZone: {
-    flex: 250,
+    flex: 3,
     justifyContent: 'center',
     width: '80%',
     paddingLeft: 10,
   },
   logoText: {
-    color: '#FFFFFF',
-    fontSize: 50,
-    fontWeight: 'bold',
-    fontFamily: 'Futura Hv Bt',
+    fontSize: 48,
+    fontWeight: '800',
+    fontFamily: 'System',
+    letterSpacing: -1,
+  },
+  subLogoText: {
+    fontSize: 32,
+    fontWeight: '800',
+    fontFamily: 'System',
+    marginTop: -5,
   },
   signInZone: {
-    flex: 150,
+    flex: 2,
     justifyContent: 'center',
     width: '80%',
-    paddingHorizontal: 10,
   },
   textInput: {
     height: 55,
     width: '100%',
-    padding: 10,
-    borderRadius: 15,
-    backgroundColor: '#fff',
-    borderColor: '#ccc',
+    paddingHorizontal: 15,
+    borderRadius: 8,
     borderWidth: 1,
     fontSize: 15,
-    color: '#333',
   },
   inputContainer: {
     marginBottom: 12,
   },
   socialZone: {
-    flex: 120,
+    flex: 1.5,
     width: '80%',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 10,
   },
   socialTitle: {
-    color: '#8A4C7D',
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: 'bold',
-    marginBottom: 10,
+    fontFamily: 'System',
+    marginBottom: 12,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
@@ -310,37 +313,37 @@ const styles = StyleSheet.create({
   googleButton: {
     flex: 1,
     height: 48,
-    borderRadius: 15,
+    borderRadius: 8,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#E4E4E7',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 6,
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 1},
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    shadowOpacity: 0.05,
+    shadowRadius: 1,
+    elevation: 1,
   },
   googleButtonText: {
-    color: '#555',
+    color: '#374151',
     fontWeight: 'bold',
     fontSize: 14,
   },
   facebookButton: {
     flex: 1,
     height: 48,
-    borderRadius: 15,
+    borderRadius: 8,
     backgroundColor: '#1877F2',
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: 6,
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 1},
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    shadowOpacity: 0.05,
+    shadowRadius: 1,
+    elevation: 1,
   },
   facebookButtonText: {
     color: '#FFFFFF',
@@ -348,65 +351,49 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   bottomZone: {
-    flex: 250,
-    justifyContent: 'center',
-    width: '80%',
-  },
-  row1Bot: {
     flex: 3,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  row2Bot: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
+    width: '80%',
     marginTop: 10,
   },
-  nothing: {
-    flex: 239,
-    justifyContent: 'center',
-    alignItems: 'flex-start',
-  },
-  signInButtonView: {
-    flex: 64,
-    borderRadius: 20,
-    marginRight: 10,
-  },
-  arrowButton: {
-    width: 64,
-    height: 64,
-    borderRadius: 64,
-    backgroundColor: '#8A4C7D',
+  primaryButton: {
+    width: '100%',
+    height: 55,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    display: 'flex',
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 1},
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
-  arrowText: {
-    fontSize: 40,
+  disabledButton: {
+    opacity: 0.8,
+  },
+  primaryButtonText: {
     color: '#fff',
-    position: 'absolute',
-    top: -2,
-    left: 12,
+    fontSize: 15,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
+  },
+  row2Bot: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 20,
+    paddingHorizontal: 5,
   },
   signUp: {
-    flex: 68,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  nothing1: {
-    flex: 75,
-  },
   forgotPassword: {
-    flex: 151,
     alignItems: 'center',
     justifyContent: 'center',
   },
   signUpText: {
-    color: '#000000',
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: 'bold',
-    fontFamily: 'Futura Hv Bt',
+    fontFamily: 'System',
   },
 });

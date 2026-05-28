@@ -6,8 +6,9 @@ import {
   Text,
   StyleSheet,
   Alert,
+  useColorScheme,
 } from 'react-native';
-import {getData, storeData} from './Utility';
+import {getData, storeData, getThemeColors} from './Utility';
 import {
   API_BASE_URL,
   KEYCLOAK_CLIENT_ID,
@@ -22,6 +23,9 @@ export default function SignUpPage({navigation}) {
   const [msgv, setMsgv] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+
+  const isDark = useColorScheme() === 'dark';
+  const theme = getThemeColors(isDark);
 
   useEffect(() => {
     //get anonymous token
@@ -117,60 +121,76 @@ export default function SignUpPage({navigation}) {
     navigation.navigate('Login');
   };
 
+  const textInputStyle = [
+    styles.textInput,
+    {
+      backgroundColor: theme.inputBg,
+      color: theme.inputText,
+      borderColor: theme.border,
+    }
+  ];
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, {backgroundColor: theme.bg}]}>
       <View style={styles.logoZone}>
-        <Text style={styles.logoText}>Sign Up</Text>
+        <Text style={[styles.logoText, {color: theme.text}]}>Sign Up</Text>
       </View>
       <View style={styles.signUpZone}>
         <TextInput
-          style={styles.textInput}
+          style={textInputStyle}
           placeholder="Tên đăng nhập"
+          placeholderTextColor={theme.placeholder}
           onChangeText={val => setUsername(val)}
         />
         <TextInput
-          style={styles.textInput}
+          style={textInputStyle}
           placeholder="Email"
+          placeholderTextColor={theme.placeholder}
           onChangeText={val => setEmail(val)}
         />
 
         <View style={styles.nameContainer}>
           <TextInput
-            style={[styles.textInput, styles.nameInput]}
+            style={[textInputStyle, styles.nameInput]}
             placeholder="Họ"
+            placeholderTextColor={theme.placeholder}
             onChangeText={val => setLastName(val)}
           />
           <TextInput
-            style={[styles.textInput, styles.nameInput]}
+            style={[textInputStyle, styles.nameInput]}
             placeholder="Tên"
+            placeholderTextColor={theme.placeholder}
             onChangeText={val => setFirstName(val)}
           />
         </View>
 
         <TextInput
-          style={styles.textInput}
+          style={textInputStyle}
           placeholder="MSSV"
+          placeholderTextColor={theme.placeholder}
           onChangeText={val => setMsgv(val)}
         />
         <TextInput
-          style={styles.textInput}
+          style={textInputStyle}
           placeholder="Password"
+          placeholderTextColor={theme.placeholder}
           secureTextEntry={true}
           onChangeText={val => setPassword(val)}
         />
         <TextInput
-          style={styles.textInput}
+          style={textInputStyle}
           placeholder="Confirm Password"
+          placeholderTextColor={theme.placeholder}
           secureTextEntry={true}
           onChangeText={val => setConfirmPassword(val)}
         />
 
-        <TouchableOpacity style={styles.signUpButton} onPress={signUp}>
+        <TouchableOpacity style={[styles.signUpButton, {backgroundColor: theme.primary}]} onPress={signUp}>
           <Text style={styles.signUpButtonText}>Sign Up</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.loginButton} onPress={goToLoginPage}>
-          <Text style={styles.loginButtonText}>Back to Login</Text>
+        <TouchableOpacity style={[styles.loginButton, {borderColor: theme.secondary}]} onPress={goToLoginPage}>
+          <Text style={[styles.loginButtonText, {color: theme.secondary}]}>Back to Login</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -180,7 +200,6 @@ export default function SignUpPage({navigation}) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FEABAE',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -188,26 +207,28 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    marginTop: 30,
   },
   logoText: {
-    color: '#FFFFFF',
-    fontSize: 50,
-    fontWeight: 'bold',
+    fontSize: 40,
+    fontWeight: '800',
+    fontFamily: 'System',
+    letterSpacing: -1,
   },
   signUpZone: {
     flex: 4,
     justifyContent: 'center',
     width: '80%',
+    marginBottom: 40,
   },
   textInput: {
-    height: 60,
+    height: 52,
     width: '100%',
-    padding: 10,
-    marginVertical: 10,
-    borderRadius: 20,
-    backgroundColor: '#fff',
-    borderColor: '#ccc',
+    paddingHorizontal: 15,
+    marginVertical: 6,
+    borderRadius: 8,
     borderWidth: 1,
+    fontSize: 15,
   },
   nameContainer: {
     flexDirection: 'row',
@@ -218,27 +239,33 @@ const styles = StyleSheet.create({
     width: '48%',
   },
   signUpButton: {
-    marginTop: 20,
-    padding: 15,
-    borderRadius: 20,
-    backgroundColor: '#8A4C7D',
+    marginTop: 16,
+    height: 50,
+    borderRadius: 8,
     alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 1},
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
   signUpButtonText: {
     color: '#fff',
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: 'bold',
   },
   loginButton: {
-    marginTop: 20,
-    padding: 15,
-    borderRadius: 20,
-    backgroundColor: '#4C8A7D',
+    marginTop: 12,
+    height: 50,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    backgroundColor: 'transparent',
     alignItems: 'center',
+    justifyContent: 'center',
   },
   loginButtonText: {
-    color: '#fff',
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: 'bold',
   },
 });
