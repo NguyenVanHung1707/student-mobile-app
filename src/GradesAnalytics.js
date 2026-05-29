@@ -91,7 +91,7 @@ export default function GradesAnalytics() {
         <Icon
           name="bar-chart"
           size={24}
-          color={isDark ? '#38bdf8' : '#8A4C7D'}
+          color={colors.primary}
         />
         <Text style={[styles.headerTitle, {color: colors.text}]}>
           Phân Tích Học Tập Cá Nhân
@@ -103,8 +103,9 @@ export default function GradesAnalytics() {
         <View
           style={[
             styles.kpiCard,
-            {backgroundColor: colors.card, borderColor: colors.border},
+            {backgroundColor: colors.card, borderColor: colors.border, borderWidth: 1},
           ]}>
+          <Icon name="book" size={16} color={colors.primary} style={{marginBottom: 4}} />
           <Text style={[styles.kpiTitle, {color: colors.textSecondary}]}>
             Môn Học
           </Text>
@@ -115,15 +116,16 @@ export default function GradesAnalytics() {
         <View
           style={[
             styles.kpiCard,
-            {backgroundColor: colors.card, borderColor: colors.border},
+            {backgroundColor: colors.card, borderColor: colors.border, borderWidth: 1},
           ]}>
+          <Icon name="percent" size={14} color="#10B981" style={{marginBottom: 4}} />
           <Text style={[styles.kpiTitle, {color: colors.textSecondary}]}>
             Chuyên Cần
           </Text>
           <Text
             style={[
               styles.kpiValue,
-              {color: averageAttendance >= 80 ? 'green' : 'orange'},
+              {color: averageAttendance >= 80 ? '#10B981' : '#F59E0B'},
             ]}>
             {averageAttendance}%
           </Text>
@@ -131,12 +133,13 @@ export default function GradesAnalytics() {
         <View
           style={[
             styles.kpiCard,
-            {backgroundColor: colors.card, borderColor: colors.border},
+            {backgroundColor: colors.card, borderColor: colors.border, borderWidth: 1},
           ]}>
+          <Icon name="exclamation-circle" size={16} color="#EF4444" style={{marginBottom: 4}} />
           <Text style={[styles.kpiTitle, {color: colors.textSecondary}]}>
             Nghỉ Học
           </Text>
-          <Text style={[styles.kpiValue, {color: 'red'}]}>{totalAbsences}</Text>
+          <Text style={[styles.kpiValue, {color: '#EF4444'}]}>{totalAbsences}</Text>
         </View>
       </View>
 
@@ -204,16 +207,16 @@ export default function GradesAnalytics() {
                   <Text style={[styles.barLabel, {color: colors.text}]}>
                     {item.month}
                   </Text>
-                  <Text style={[styles.barValue, {color: 'red'}]}>
+                  <Text style={[styles.barValue, {color: '#EF4444'}]}>
                     {item.absences} buổi
                   </Text>
                 </View>
                 <View
                   style={[
                     styles.barBg,
-                    {backgroundColor: isDark ? '#334155' : '#E2E8F0'},
+                    {backgroundColor: isDark ? '#222E45' : '#DFE5EE'},
                   ]}>
-                  <View style={[styles.barFill, {width: `${ratio * 100}%`}]} />
+                  <View style={[styles.barFill, {width: `${ratio * 100}%`, backgroundColor: '#EF4444'}]} />
                 </View>
               </View>
             );

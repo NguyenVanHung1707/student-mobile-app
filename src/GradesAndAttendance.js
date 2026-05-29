@@ -7,15 +7,18 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  useColorScheme,
 } from 'react-native';
 import {useFocusEffect} from '@react-navigation/native';
 import axios from 'axios';
 import {API_URL} from '@env';
 import Icon from 'react-native-vector-icons/FontAwesome';
-import {getData} from './Utility';
+import {getData, getThemeColors} from './Utility';
 import GradesAnalytics from './GradesAnalytics';
 
 export default function GradesAndAttendance() {
+  const isDark = useColorScheme() === 'dark';
+  const theme = getThemeColors(isDark);
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [courseDetails, setCourseDetails] = useState({});
@@ -205,32 +208,32 @@ export default function GradesAndAttendance() {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="tomato" />
-        <Text style={styles.loadingText}>Đang tải kết quả học tập...</Text>
+      <View style={[styles.loadingContainer, {backgroundColor: theme.bg}]}>
+        <ActivityIndicator size="large" color={theme.primary} />
+        <Text style={[styles.loadingText, {color: theme.textSecondary}]}>Đang tải kết quả học tập...</Text>
       </View>
     );
   }
 
   return (
-    <View style={{flex: 1, backgroundColor: '#f8fafc'}}>
+    <View style={{flex: 1, backgroundColor: theme.bg}}>
       {/* Switcher Tab Bar */}
-      <View style={styles.topTabBar}>
+      <View style={[styles.topTabBar, {backgroundColor: theme.card, borderBottomWidth: 1, borderColor: theme.border}]}>
         <TouchableOpacity
           style={[
             styles.topTabButton,
-            viewMode === 'list' && styles.activeTopTabButton,
+            viewMode === 'list' ? {backgroundColor: theme.primary} : {backgroundColor: 'transparent'},
           ]}
           onPress={() => setViewMode('list')}>
           <Icon
             name="list-alt"
             size={14}
-            color={viewMode === 'list' ? '#ffffff' : '#64748b'}
+            color={viewMode === 'list' ? '#ffffff' : theme.textSecondary}
           />
           <Text
             style={[
               styles.topTabButtonText,
-              viewMode === 'list' && styles.activeTopTabButtonText,
+              viewMode === 'list' ? {color: '#ffffff'} : {color: theme.textSecondary},
             ]}>
             Bảng điểm chi tiết
           </Text>
@@ -238,18 +241,18 @@ export default function GradesAndAttendance() {
         <TouchableOpacity
           style={[
             styles.topTabButton,
-            viewMode === 'analytics' && styles.activeTopTabButton,
+            viewMode === 'analytics' ? {backgroundColor: theme.primary} : {backgroundColor: 'transparent'},
           ]}
           onPress={() => setViewMode('analytics')}>
           <Icon
             name="bar-chart"
             size={14}
-            color={viewMode === 'analytics' ? '#ffffff' : '#64748b'}
+            color={viewMode === 'analytics' ? '#ffffff' : theme.textSecondary}
           />
           <Text
             style={[
               styles.topTabButtonText,
-              viewMode === 'analytics' && styles.activeTopTabButtonText,
+              viewMode === 'analytics' ? {color: '#ffffff'} : {color: theme.textSecondary},
             ]}>
             Phân tích học tập
           </Text>
@@ -260,42 +263,42 @@ export default function GradesAndAttendance() {
         <GradesAnalytics />
       ) : (
         <ScrollView
-          style={styles.container}
+          style={[styles.container, {backgroundColor: theme.bg}]}
           contentContainerStyle={{paddingBottom: 30}}>
           {/* Stats Summary Board */}
           <View style={styles.statsRow}>
-            <View style={styles.statCard}>
-              <Icon name="book" size={20} color="#2196F3" />
-              <Text style={styles.statVal}>{totalClasses}</Text>
-              <Text style={styles.statLabel}>Lớp học</Text>
+            <View style={[styles.statCard, {backgroundColor: theme.card, borderColor: theme.border, borderWidth: 1}]}>
+              <Icon name="book" size={20} color={theme.primary} />
+              <Text style={[styles.statVal, {color: theme.primary}]}>{totalClasses}</Text>
+              <Text style={[styles.statLabel, {color: theme.textSecondary}]}>Lớp học</Text>
             </View>
 
-            <View style={styles.statCard}>
-              <Icon name="percent" size={18} color="#4CAF50" />
-              <Text style={[styles.statVal, {color: '#4CAF50'}]}>
+            <View style={[styles.statCard, {backgroundColor: theme.card, borderColor: theme.border, borderWidth: 1}]}>
+              <Icon name="percent" size={18} color="#10B981" />
+              <Text style={[styles.statVal, {color: '#10B981'}]}>
                 {averageAttendance}%
               </Text>
-              <Text style={styles.statLabel}>Chuyên cần</Text>
+              <Text style={[styles.statLabel, {color: theme.textSecondary}]}>Chuyên cần</Text>
             </View>
 
-            <View style={styles.statCard}>
-              <Icon name="exclamation-circle" size={20} color="#F44336" />
-              <Text style={[styles.statVal, {color: '#F44336'}]}>
+            <View style={[styles.statCard, {backgroundColor: theme.card, borderColor: theme.border, borderWidth: 1}]}>
+              <Icon name="exclamation-circle" size={20} color="#EF4444" />
+              <Text style={[styles.statVal, {color: '#EF4444'}]}>
                 {totalAbsences}
               </Text>
-              <Text style={styles.statLabel}>Nghỉ học</Text>
+              <Text style={[styles.statLabel, {color: theme.textSecondary}]}>Nghỉ học</Text>
             </View>
           </View>
 
           {/* Courses Accordion List */}
-          <Text style={styles.sectionTitle}>
+          <Text style={[styles.sectionTitle, {color: theme.text}]}>
             Bảng điểm & Chuyên cần chi tiết
           </Text>
 
           {courses.length === 0 ? (
-            <View style={styles.emptyContainer}>
-              <Icon name="graduation-cap" size={50} color="#ccc" />
-              <Text style={styles.emptyText}>
+            <View style={[styles.emptyContainer, {backgroundColor: theme.card, borderColor: theme.border, borderWidth: 1}]}>
+              <Icon name="graduation-cap" size={50} color={theme.placeholder} />
+              <Text style={[styles.emptyText, {color: theme.textSecondary}]}>
                 Bạn chưa tham gia lớp học nào
               </Text>
             </View>
@@ -316,7 +319,7 @@ export default function GradesAndAttendance() {
                   key={course.id}
                   style={[
                     styles.courseCard,
-                    isExpanded && styles.expandedCard,
+                    {backgroundColor: theme.card, borderColor: isExpanded ? theme.primary : theme.border},
                   ]}>
                   {/* Header Touchable */}
                   <TouchableOpacity
@@ -325,7 +328,7 @@ export default function GradesAndAttendance() {
                     onPress={() => toggleExpand(course.id)}>
                     <View style={{flex: 1}}>
                       <View style={styles.codeRow}>
-                        <Text style={styles.courseCode}>
+                        <Text style={[styles.courseCode, {backgroundColor: theme.bgSecondary, color: theme.textSecondary}]}>
                           {course.courseCode}
                         </Text>
                         <View style={styles.rateBadge}>
@@ -335,29 +338,29 @@ export default function GradesAndAttendance() {
                               {
                                 color:
                                   detail.attendanceRate >= 90
-                                    ? '#4CAF50'
+                                    ? '#10B981'
                                     : detail.attendanceRate >= 80
-                                    ? '#FF9800'
-                                    : '#F44336',
+                                    ? '#F59E0B'
+                                    : '#EF4444',
                               },
                             ]}>
                             Chuyên cần: {detail.attendanceRate}%
                           </Text>
                         </View>
                       </View>
-                      <Text style={styles.subjectText}>{course.subject}</Text>
+                      <Text style={[styles.subjectText, {color: theme.text}]}>{course.subject}</Text>
                     </View>
 
                     <Icon
                       name={isExpanded ? 'chevron-up' : 'chevron-down'}
-                      size={16}
-                      color="#666"
+                      size={14}
+                      color={theme.textSecondary}
                       style={{marginLeft: 10}}
                     />
                   </TouchableOpacity>
 
                   {/* Progress bar */}
-                  <View style={styles.progressBarBg}>
+                  <View style={[styles.progressBarBg, {backgroundColor: theme.border}]}>
                     <View
                       style={[
                         styles.progressBar,
@@ -365,10 +368,10 @@ export default function GradesAndAttendance() {
                           width: `${detail.attendanceRate}%`,
                           backgroundColor:
                             detail.attendanceRate >= 90
-                              ? '#4CAF50'
+                              ? '#10B981'
                               : detail.attendanceRate >= 80
-                              ? '#FF9800'
-                              : '#F44336',
+                              ? '#F59E0B'
+                              : '#EF4444',
                         },
                       ]}
                     />
@@ -376,9 +379,9 @@ export default function GradesAndAttendance() {
 
                   {/* Expanded Content */}
                   {isExpanded && (
-                    <View style={styles.cardContent}>
+                    <View style={[styles.cardContent, {backgroundColor: theme.bgSecondary, borderColor: theme.border}]}>
                       {/* Nested Tab Switcher */}
-                      <View style={styles.tabBar}>
+                      <View style={[styles.tabBar, {borderColor: theme.border}]}>
                         <TouchableOpacity
                           onPress={() =>
                             setCourseActiveTabs(prev => ({
@@ -388,13 +391,12 @@ export default function GradesAndAttendance() {
                           }
                           style={[
                             styles.tabButton,
-                            activeTab === 'grades' && styles.activeTabButton,
+                            activeTab === 'grades' && {borderBottomColor: theme.primary},
                           ]}>
                           <Text
                             style={[
                               styles.tabButtonText,
-                              activeTab === 'grades' &&
-                                styles.activeTabButtonText,
+                              activeTab === 'grades' ? {color: theme.primary, fontWeight: '700'} : {color: theme.textSecondary},
                             ]}>
                             Bảng điểm ({detail.assessments.length})
                           </Text>
@@ -409,15 +411,14 @@ export default function GradesAndAttendance() {
                           }
                           style={[
                             styles.tabButton,
-                            activeTab === 'absences' && styles.activeTabButton,
+                            activeTab === 'absences' && {borderBottomColor: theme.primary},
                           ]}>
                           <Text
                             style={[
                               styles.tabButtonText,
-                              activeTab === 'absences' &&
-                                styles.activeTabButtonText,
+                              activeTab === 'absences' ? {color: theme.primary, fontWeight: '700'} : {color: theme.textSecondary},
                             ]}>
-                            Chuyên cần ({detail.presences}/{detail.presences + detail.absences})
+                            Ngày vắng ({detail.absences})
                           </Text>
                         </TouchableOpacity>
                       </View>
@@ -431,13 +432,13 @@ export default function GradesAndAttendance() {
                             </Text>
                           ) : (
                             detail.assessments.map(a => (
-                              <View key={a.id} style={styles.gradeItem}>
+                              <View key={a.id} style={[styles.gradeItem, {backgroundColor: theme.card, borderColor: theme.border}]}>
                                 <View style={{flex: 1}}>
-                                  <Text style={styles.gradeTitle}>
+                                  <Text style={[styles.gradeTitle, {color: theme.text}]}>
                                     {a.title}
                                   </Text>
                                   <View style={styles.badgeRow}>
-                                    <Text style={styles.typeText}>
+                                    <Text style={[styles.typeText, {backgroundColor: theme.bgSecondary, color: theme.primary}]}>
                                       {getAssessmentTypeLabel(a.type)}
                                     </Text>
                                     <Text
@@ -452,14 +453,14 @@ export default function GradesAndAttendance() {
                                 <View style={styles.scoreBox}>
                                   {a.submissionStatus === 'GRADED' &&
                                   a.studentScore !== null ? (
-                                    <Text style={styles.scoreText}>
-                                      <Text style={styles.scoreTextMain}>
+                                    <Text style={[styles.scoreText, {color: theme.textSecondary}]}>
+                                      <Text style={[styles.scoreTextMain, {color: '#10B981'}]}>
                                         {a.studentScore}
                                       </Text>
                                       /{a.maxScore}
                                     </Text>
                                   ) : (
-                                    <Text style={styles.pendingScoreText}>
+                                    <Text style={[styles.pendingScoreText, {color: theme.placeholder}]}>
                                       --/{a.maxScore}
                                     </Text>
                                   )}
@@ -474,26 +475,31 @@ export default function GradesAndAttendance() {
                       {activeTab === 'absences' && (
                         <View style={styles.tabContentContainer}>
                           {detail.mappedAttendanceLogs.length === 0 ? (
-                            <Text style={styles.noDataText}>
+                            <Text style={[styles.noDataText, {color: theme.textSecondary}]}>
                               Chưa có buổi học nào được điểm danh.
                             </Text>
                           ) : (
                             detail.mappedAttendanceLogs.map(log => (
-                              <View key={log.id} style={[styles.absenceItem, log.isAttendance ? {borderColor: '#C8E6C9', backgroundColor: '#F9FFF9'} : {borderColor: '#FFEBEB', backgroundColor: '#FFFAFA'}]}>
+                              <View key={log.id} style={[
+                                styles.absenceItem,
+                                log.isAttendance
+                                  ? {borderColor: isDark ? '#10B98140' : '#C8E6C9', backgroundColor: isDark ? '#10B98115' : '#F9FFF9'}
+                                  : {borderColor: isDark ? '#EF444440' : '#FFEBEB', backgroundColor: isDark ? '#EF444415' : '#FFFAFA'}
+                              ]}>
                                 <View style={styles.absenceLeft}>
                                   <Icon
                                     name={log.isAttendance ? "check-circle" : "times-circle"}
                                     size={16}
-                                    color={log.isAttendance ? "#4CAF50" : "#F44336"}
+                                    color={log.isAttendance ? "#10B981" : "#EF4444"}
                                   />
-                                  <Text style={[styles.absenceText, {marginLeft: 8}]}>
+                                  <Text style={[styles.absenceText, {marginLeft: 8, color: theme.text}]}>
                                     Buổi học số {log.lectureNumber}
                                   </Text>
-                                  <Text style={{fontSize: 11, color: log.isAttendance ? '#2E7D32' : '#C62828', fontWeight: 'bold', marginLeft: 10}}>
+                                  <Text style={{fontSize: 11, color: log.isAttendance ? '#10B981' : '#EF4444', fontWeight: 'bold', marginLeft: 10}}>
                                     ({log.isAttendance ? 'Đi học' : 'Vắng mặt'})
                                   </Text>
                                 </View>
-                                <Text style={styles.absenceDate}>
+                                <Text style={[styles.absenceDate, {color: theme.textSecondary}]}>
                                   {log.date} - {log.time}
                                 </Text>
                               </View>

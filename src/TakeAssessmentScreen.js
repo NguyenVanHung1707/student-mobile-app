@@ -10,15 +10,20 @@ import {
   Alert,
   Platform,
   PermissionsAndroid,
+  useColorScheme,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import Geolocation from 'react-native-geolocation-service';
 import {API_BASE_URL} from './config';
+import {getThemeColors} from './Utility';
 
 export default function TakeAssessmentScreen({route, navigation}) {
   const {assessmentId, submissionId, courseId} = route.params;
+
+  const isDark = useColorScheme() === 'dark';
+  const colors = getThemeColors(isDark);
 
   const [assessment, setAssessment] = useState(null);
   const [questions, setQuestions] = useState([]);
@@ -262,9 +267,9 @@ export default function TakeAssessmentScreen({route, navigation}) {
 
   if (!assessment) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#34568B" />
-        <Text style={styles.loadingText}>Đang tải đề thi & chuẩn bị phiên làm bài...</Text>
+      <View style={[styles.center, {backgroundColor: colors.bg}]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={[styles.loadingText, {color: colors.textSecondary}]}>Đang tải đề thi & chuẩn bị phiên làm bài...</Text>
       </View>
     );
   }
@@ -273,34 +278,47 @@ export default function TakeAssessmentScreen({route, navigation}) {
   const totalQuestions = questions.length;
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, {backgroundColor: colors.bg}]}>
       {/* Top Header Panel */}
-      <View style={styles.header}>
+      <View style={[styles.header, {backgroundColor: colors.card, borderBottomColor: colors.border}]}>
         <View style={styles.headerRow}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Icon name="arrow-left" size={16} color="#1e293b" />
+            <Icon name="arrow-left" size={16} color={colors.text} />
           </TouchableOpacity>
           <View style={styles.headerTitleContainer}>
-            <Text style={styles.title} numberOfLines={1}>
+            <Text style={[styles.title, {color: colors.text}]} numberOfLines={1}>
               {assessment.title}
             </Text>
-            <Text style={styles.subtitle}>
+            <Text style={[styles.subtitle, {color: colors.textSecondary}]}>
               Số câu: {totalQuestions} câu | {assessment.type}
             </Text>
           </View>
         </View>
 
         {/* Sync & Timer status */}
-        <View style={styles.statusRow}>
+        <View style={[styles.statusRow, {borderTopColor: colors.border}]}>
           <View style={styles.syncContainer}>
-            <Icon name="cloud-upload" size={12} color="#64748b" style={{marginRight: 4}} />
-            <Text style={styles.syncText}>{syncStatus}</Text>
+            <Icon name="cloud-upload" size={12} color={colors.textSecondary} style={{marginRight: 4}} />
+            <Text style={[styles.syncText, {color: colors.textSecondary}]}>{syncStatus}</Text>
           </View>
 
           {timeLeft !== null && (
-            <View style={[styles.timerBadge, timeLeft < 300 && styles.timerUrgent]}>
-              <Icon name="clock-o" size={14} color={timeLeft < 300 ? '#ef4444' : '#34568B'} style={{marginRight: 6}} />
-              <Text style={[styles.timerText, timeLeft < 300 && styles.timerTextUrgent]}>
+            <View style={[
+              styles.timerBadge,
+              {backgroundColor: isDark ? '#10B98115' : '#f0fdf4', borderColor: isDark ? '#10B98140' : '#bfe1d0'},
+              timeLeft < 300 && {backgroundColor: isDark ? '#EF444415' : '#fef2f2', borderColor: isDark ? '#EF444440' : '#fca5a5'}
+            ]}>
+              <Icon
+                name="clock-o"
+                size={14}
+                color={timeLeft < 300 ? '#ef4444' : colors.primary}
+                style={{marginRight: 6}}
+              />
+              <Text style={[
+                styles.timerText,
+                {color: colors.primary},
+                timeLeft < 300 && {color: '#ef4444'}
+              ]}>
                 {formatTime(timeLeft)}
               </Text>
             </View>
@@ -322,40 +340,56 @@ export default function TakeAssessmentScreen({route, navigation}) {
         {currentQ ? (
           <ScrollView style={styles.questionPanel} contentContainerStyle={{paddingBottom: 25}}>
             <View style={styles.qHeader}>
-              <Text style={styles.qNumText}>Câu {currentQIdx + 1}</Text>
-              <Text style={styles.qScoreText}>
+              <Text style={[styles.qNumText, {color: colors.primary, backgroundColor: colors.bgSecondary}]}>Câu {currentQIdx + 1}</Text>
+              <Text style={[styles.qScoreText, {color: colors.textSecondary}]}>
                 [{currentQ.type === 'MULTIPLE_CHOICE' ? 'Trắc nghiệm' : currentQ.type === 'SHORT_ANSWER' ? 'Trả lời ngắn' : 'Tự luận'} - {currentQ.score}đ]
               </Text>
             </View>
 
-            <Text style={styles.qContent}>{currentQ.content}</Text>
+            <Text style={[styles.qContent, {color: colors.text}]}>{currentQ.content}</Text>
 
             {/* Answer Controls */}
             {currentQ.type === 'MULTIPLE_CHOICE' && (
               <View style={styles.choicesGrid}>
                 {(() => {
                   try {
-                    const meta = JSON.parse(currentQ.metadata || '{}');
-                    return meta.choices?.map(c => {
-                      const isSelected = answers[currentQ.id]?.selectedChoice === c.key;
-                      return (
-                        <TouchableOpacity
-                          key={c.key}
-                          style={[styles.choiceCard, isSelected && styles.choiceCardSelected]}
-                          onPress={() => handleChoiceSelect(currentQ.id, c.key)}>
-                          <View style={[styles.choiceIndex, isSelected && styles.choiceIndexSelected]}>
-                            <Text style={[styles.choiceIndexText, isSelected && styles.choiceIndexTextSelected]}>
-                              {c.key}
-                            </Text>
-                          </View>
-                          <Text style={[styles.choiceText, isSelected && styles.choiceTextSelected]}>
-                            {c.text}
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    });
+                     const meta = JSON.parse(currentQ.metadata || '{}');
+                     return meta.choices?.map(c => {
+                       const isSelected = answers[currentQ.id]?.selectedChoice === c.key;
+                       return (
+                         <TouchableOpacity
+                           key={c.key}
+                           style={[
+                             styles.choiceCard,
+                             {backgroundColor: colors.card, borderColor: colors.border},
+                             isSelected && {borderColor: colors.primary, backgroundColor: isDark ? '#0F62FE15' : '#f0f4fa'}
+                           ]}
+                           onPress={() => handleChoiceSelect(currentQ.id, c.key)}>
+                           <View style={[
+                             styles.choiceIndex,
+                             {backgroundColor: colors.bgSecondary, borderColor: colors.border},
+                             isSelected && {backgroundColor: colors.primary, borderColor: colors.primary}
+                           ]}>
+                             <Text style={[
+                               styles.choiceIndexText,
+                               {color: colors.textSecondary},
+                               isSelected && {color: '#ffffff'}
+                             ]}>
+                               {c.key}
+                             </Text>
+                           </View>
+                           <Text style={[
+                             styles.choiceText,
+                             {color: colors.text},
+                             isSelected && {color: colors.primary, fontWeight: '700'}
+                           ]}>
+                             {c.text}
+                           </Text>
+                         </TouchableOpacity>
+                       );
+                     });
                   } catch (e) {
-                    return <Text style={styles.errorText}>Lỗi hiển thị phương án lựa chọn.</Text>;
+                    return <Text style={[styles.errorText, {color: '#ef4444'}]}>Lỗi hiển thị phương án lựa chọn.</Text>;
                   }
                 })()}
               </View>
@@ -363,10 +397,11 @@ export default function TakeAssessmentScreen({route, navigation}) {
 
             {currentQ.type === 'SHORT_ANSWER' && (
               <View style={styles.textInputContainer}>
-                <Text style={styles.inputLabel}>Nhập đáp án ngắn:</Text>
+                <Text style={[styles.inputLabel, {color: colors.textSecondary}]}>Nhập đáp án ngắn:</Text>
                 <TextInput
-                  style={styles.textInput}
+                  style={[styles.textInput, {backgroundColor: colors.inputBg, borderColor: colors.border, color: colors.inputText}]}
                   placeholder="Điền từ khóa đáp án..."
+                  placeholderTextColor={colors.placeholder}
                   value={answers[currentQ.id]?.answerText || ''}
                   onChangeText={val => handleTextChange(currentQ.id, val)}
                   autoCapitalize="none"
@@ -376,10 +411,15 @@ export default function TakeAssessmentScreen({route, navigation}) {
 
             {currentQ.type === 'ESSAY' && (
               <View style={styles.textInputContainer}>
-                <Text style={styles.inputLabel}>Trình bày bài giải tự luận:</Text>
+                <Text style={[styles.inputLabel, {color: colors.textSecondary}]}>Trình bày bài giải tự luận:</Text>
                 <TextInput
-                  style={[styles.textInput, styles.textArea]}
+                  style={[
+                    styles.textInput,
+                    styles.textArea,
+                    {backgroundColor: colors.inputBg, borderColor: colors.border, color: colors.inputText}
+                  ]}
                   placeholder="Nhập nội dung tự luận chi tiết tại đây..."
+                  placeholderTextColor={colors.placeholder}
                   multiline={true}
                   numberOfLines={8}
                   textAlignVertical="top"
@@ -390,28 +430,36 @@ export default function TakeAssessmentScreen({route, navigation}) {
             )}
           </ScrollView>
         ) : (
-          <View style={styles.center}>
-            <Text style={styles.errorText}>Không tìm thấy câu hỏi!</Text>
+          <View style={[styles.center, {backgroundColor: colors.bg}]}>
+            <Text style={[styles.errorText, {color: '#ef4444'}]}>Không tìm thấy câu hỏi!</Text>
           </View>
         )}
       </View>
 
       {/* Bottom Sticky Navigator & Submit Button */}
-      <View style={styles.footer}>
+      <View style={[styles.footer, {backgroundColor: colors.card, borderTopColor: colors.border}]}>
         {/* Prev / Next buttons */}
         <View style={styles.navRow}>
           <TouchableOpacity
-            style={[styles.navButton, currentQIdx === 0 && styles.navButtonDisabled]}
+            style={[
+              styles.navButton,
+              {backgroundColor: colors.bgSecondary, borderColor: colors.border},
+              currentQIdx === 0 && styles.navButtonDisabled
+            ]}
             disabled={currentQIdx === 0}
             onPress={() => setCurrentQIdx(currentQIdx - 1)}>
-            <Icon name="chevron-left" size={12} color={currentQIdx === 0 ? '#cbd5e1' : '#475569'} />
-            <Text style={[styles.navButtonText, currentQIdx === 0 && styles.navButtonTextDisabled]}>
+            <Icon name="chevron-left" size={12} color={currentQIdx === 0 ? colors.placeholder : colors.textSecondary} />
+            <Text style={[
+              styles.navButtonText,
+              {color: colors.textSecondary},
+              currentQIdx === 0 && {color: colors.placeholder}
+            ]}>
               Trước đó
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.gridToggleButton}
+            style={[styles.gridToggleButton, {backgroundColor: isDark ? '#0F62FE15' : '#f0f4fa', borderColor: colors.primary}]}
             onPress={() => {
               // Open modal sheet or alert showing question list mapping
               Alert.alert(
@@ -424,20 +472,28 @@ export default function TakeAssessmentScreen({route, navigation}) {
                   .join('\n'),
               );
             }}>
-            <Icon name="th" size={14} color="#34568B" />
-            <Text style={styles.gridToggleText}>
+            <Icon name="th" size={14} color={colors.primary} />
+            <Text style={[styles.gridToggleText, {color: colors.primary}]}>
               {currentQIdx + 1}/{totalQuestions}
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.navButton, currentQIdx === totalQuestions - 1 && styles.navButtonDisabled]}
+            style={[
+              styles.navButton,
+              {backgroundColor: colors.bgSecondary, borderColor: colors.border},
+              currentQIdx === totalQuestions - 1 && styles.navButtonDisabled
+            ]}
             disabled={currentQIdx === totalQuestions - 1}
             onPress={() => setCurrentQIdx(currentQIdx + 1)}>
-            <Text style={[styles.navButtonText, currentQIdx === totalQuestions - 1 && styles.navButtonTextDisabled]}>
+            <Text style={[
+              styles.navButtonText,
+              {color: colors.textSecondary},
+              currentQIdx === totalQuestions - 1 && {color: colors.placeholder}
+            ]}>
               Tiếp theo
             </Text>
-            <Icon name="chevron-right" size={12} color={currentQIdx === totalQuestions - 1 ? '#cbd5e1' : '#475569'} />
+            <Icon name="chevron-right" size={12} color={currentQIdx === totalQuestions - 1 ? colors.placeholder : colors.textSecondary} />
           </TouchableOpacity>
         </View>
 

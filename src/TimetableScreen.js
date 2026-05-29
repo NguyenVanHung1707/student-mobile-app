@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   FlatList,
   Alert,
+  useColorScheme,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
@@ -26,7 +27,7 @@ const DAYS_MAP = [
 ];
 
 export default function TimetableScreen() {
-  const isDark = false; // standard theme matching main app light mode
+  const isDark = useColorScheme() === 'dark';
   const colors = getThemeColors(isDark);
 
   const [semesters, setSemesters] = useState([]);
@@ -213,25 +214,25 @@ export default function TimetableScreen() {
   };
 
   const renderScheduleItem = ({item}) => (
-    <View style={styles.slotCard}>
-      <View style={styles.slotAccent} />
+    <View style={[styles.slotCard, {backgroundColor: colors.card, borderColor: colors.border}]}>
+      <View style={[styles.slotAccent, {backgroundColor: colors.primary}]} />
       <View style={styles.slotContent}>
         <View style={styles.slotHeader}>
-          <Text style={styles.courseCode}>{item.courseCode}</Text>
-          <Text style={styles.roomName}>📍 {item.roomName}</Text>
+          <Text style={[styles.courseCode, {color: colors.textSecondary}]}>{item.courseCode}</Text>
+          <Text style={[styles.roomName, {color: colors.primary}]}>📍 {item.roomName}</Text>
         </View>
-        <Text style={styles.subjectName}>{item.subject}</Text>
-        <View style={styles.slotFooter}>
+        <Text style={[styles.subjectName, {color: colors.text}]}>{item.subject}</Text>
+        <View style={[styles.slotFooter, {borderTopColor: colors.border}]}>
           <View style={styles.footerItem}>
-            <Icon name="clock-o" size={12} color="#64748b" />
-            <Text style={styles.footerText}>
+            <Icon name="clock-o" size={12} color={colors.textSecondary} />
+            <Text style={[styles.footerText, {color: colors.textSecondary}]}>
               {item.startTime} - {item.endTime}
             </Text>
           </View>
           {item.teacherName && (
             <View style={styles.footerItem}>
-              <Icon name="user" size={12} color="#64748b" />
-              <Text style={styles.footerText} numberOfLines={1}>
+              <Icon name="user" size={12} color={colors.textSecondary} />
+              <Text style={[styles.footerText, {color: colors.textSecondary}]} numberOfLines={1}>
                 {item.teacherName}
               </Text>
             </View>
@@ -244,33 +245,35 @@ export default function TimetableScreen() {
   const filteredSchedules = schedules.filter(s => s.dayOfWeek === selectedDay);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, {backgroundColor: colors.bg}]}>
       {/* Header with Semester Selection */}
-      <View style={styles.header}>
+      <View style={[styles.header, {backgroundColor: colors.card, borderBottomColor: colors.border}]}>
         <View>
-          <Text style={styles.headerTitle}>Thời khóa biểu tuần</Text>
-          <Text style={styles.headerSubtitle}>Tra cứu phòng học và thời gian lên lớp</Text>
+          <Text style={[styles.headerTitle, {color: colors.text}]}>Thời khóa biểu tuần</Text>
+          <Text style={[styles.headerSubtitle, {color: colors.textSecondary}]}>Tra cứu phòng học và thời gian lên lớp</Text>
         </View>
       </View>
 
       {/* Semester Dropdown Simulation */}
       {semesters.length > 0 && (
-        <View style={styles.semesterBar}>
-          <Icon name="history" size={14} color="#8A4C7D" style={{marginRight: 6}} />
-          <Text style={styles.semesterText}>Học kỳ: </Text>
+        <View style={[styles.semesterBar, {backgroundColor: colors.card, borderBottomColor: colors.border}]}>
+          <Icon name="history" size={14} color={colors.secondary} style={{marginRight: 6}} />
+          <Text style={[styles.semesterText, {color: colors.text}]}>Học kỳ: </Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             {semesters.map(s => (
               <TouchableOpacity
                 key={s.id}
                 style={[
                   styles.semChip,
-                  selectedSemesterId === s.id && styles.semChipActive,
+                  {backgroundColor: colors.bgSecondary, borderColor: colors.border},
+                  selectedSemesterId === s.id && {backgroundColor: colors.primary, borderColor: colors.primary},
                 ]}
                 onPress={() => setSelectedSemesterId(s.id)}>
                 <Text
                   style={[
                     styles.semChipText,
-                    selectedSemesterId === s.id && styles.semChipTextActive,
+                    {color: colors.textSecondary},
+                    selectedSemesterId === s.id && {color: '#ffffff', fontWeight: 'bold'},
                   ]}>
                   {s.code} {s.isActive ? '🔥' : ''}
                 </Text>
@@ -282,21 +285,21 @@ export default function TimetableScreen() {
 
       {/* Week Selector */}
       {weeks.length > 0 && activeWeek && (
-        <View style={styles.weekSelector}>
+        <View style={[styles.weekSelector, {backgroundColor: colors.card}]}>
           <TouchableOpacity
             onPress={handlePrevWeek}
             disabled={selectedWeekIndex <= 0}
-            style={[styles.weekNavButton, selectedWeekIndex <= 0 && styles.disabledButton]}>
-            <Icon name="chevron-left" size={14} color={selectedWeekIndex <= 0 ? '#cbd5e1' : '#475569'} />
+            style={[styles.weekNavButton, {borderColor: colors.border, backgroundColor: colors.bgSecondary}, selectedWeekIndex <= 0 && styles.disabledButton]}>
+            <Icon name="chevron-left" size={14} color={selectedWeekIndex <= 0 ? colors.placeholder : colors.text} />
           </TouchableOpacity>
           <View style={styles.weekInfo}>
             <View style={styles.weekRow}>
-              <Text style={styles.weekNumberText}>Tuần {activeWeek.weekNumber}</Text>
+              <Text style={[styles.weekNumberText, {color: colors.text}]}>Tuần {activeWeek.weekNumber}</Text>
               <View style={[styles.badge, getWeekTypeBadgeStyle(activeWeek.weekType)]}>
                 <Text style={styles.badgeText}>{getWeekTypeBadgeText(activeWeek.weekType)}</Text>
               </View>
             </View>
-            <Text style={styles.weekRangeText}>
+            <Text style={[styles.weekRangeText, {color: colors.textSecondary}]}>
               Từ {new Date(activeWeek.startDate).toLocaleDateString('vi-VN')} đến{' '}
               {new Date(activeWeek.endDate).toLocaleDateString('vi-VN')}
             </Text>
@@ -304,11 +307,11 @@ export default function TimetableScreen() {
           <TouchableOpacity
             onPress={handleNextWeek}
             disabled={selectedWeekIndex >= weeks.length - 1}
-            style={[styles.weekNavButton, selectedWeekIndex >= weeks.length - 1 && styles.disabledButton]}>
+            style={[styles.weekNavButton, {borderColor: colors.border, backgroundColor: colors.bgSecondary}, selectedWeekIndex >= weeks.length - 1 && styles.disabledButton]}>
             <Icon
               name="chevron-right"
               size={14}
-              color={selectedWeekIndex >= weeks.length - 1 ? '#cbd5e1' : '#475569'}
+              color={selectedWeekIndex >= weeks.length - 1 ? colors.placeholder : colors.text}
             />
           </TouchableOpacity>
         </View>
@@ -316,7 +319,7 @@ export default function TimetableScreen() {
 
       {/* Day Selector (Mon -> Sun) */}
       {activeWeek && (
-        <View style={styles.daySelectorContainer}>
+        <View style={[styles.daySelectorContainer, {backgroundColor: colors.card, borderBottomColor: colors.border}]}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.daySelectorScroll}>
             {DAYS_MAP.map(day => {
               const isSelected = selectedDay === day.num;
@@ -328,23 +331,26 @@ export default function TimetableScreen() {
                   key={day.num}
                   style={[
                     styles.dayChip,
-                    isSelected && styles.dayChipActive,
-                    isToday && styles.dayChipToday,
+                    {backgroundColor: colors.bgSecondary, borderColor: colors.border},
+                    isSelected && {backgroundColor: colors.primary, borderColor: colors.primary},
+                    isToday && {borderColor: colors.secondary, borderWidth: 1.5},
                   ]}
                   onPress={() => setSelectedDay(day.num)}>
                   <Text
                     style={[
                       styles.dayChipLabel,
-                      isSelected && styles.dayChipLabelActive,
-                      isToday && styles.dayChipLabelToday,
+                      {color: colors.textSecondary},
+                      isSelected && {color: '#ffffff'},
+                      isToday && {color: colors.secondary},
                     ]}>
                     {day.label}
                   </Text>
                   <Text
                     style={[
                       styles.dayChipDate,
-                      isSelected && styles.dayChipDateActive,
-                      isToday && styles.dayChipDateToday,
+                      {color: colors.textSecondary},
+                      isSelected && {color: '#e2e8f0'},
+                      isToday && {color: colors.secondary},
                     ]}>
                     {formattedDate}
                   </Text>
@@ -358,22 +364,22 @@ export default function TimetableScreen() {
       {/* Schedule Detail Panel */}
       {loadingSemesters || loadingWeeks || loadingSchedules ? (
         <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color="#8A4C7D" />
-          <Text style={styles.loadingText}>Đang nạp thời khóa biểu tuần...</Text>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={[styles.loadingText, {color: colors.primary}]}>Đang nạp thời khóa biểu tuần...</Text>
         </View>
       ) : activeWeek?.weekType === 'HOLIDAY' ? (
-        <View style={styles.emptyContainer}>
+        <View style={[styles.emptyContainer, {backgroundColor: colors.card, borderRadius: 16, padding: 20, margin: 15}]}>
           <Icon name="coffee" size={48} color="#10b981" />
-          <Text style={styles.emptyTitle}>Tuần Nghỉ Lễ!</Text>
-          <Text style={styles.emptySubtitle}>
+          <Text style={[styles.emptyTitle, {color: colors.text}]}>Tuần Nghỉ Lễ!</Text>
+          <Text style={[styles.emptySubtitle, {color: colors.textSecondary}]}>
             Không có lịch học trên lớp trong tuần nghỉ lễ. Hãy tận hưởng kỳ nghỉ của bạn nhé!
           </Text>
         </View>
       ) : filteredSchedules.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Icon name="calendar-o" size={48} color="#94a3b8" />
-          <Text style={styles.emptyTitle}>Không có lịch học</Text>
-          <Text style={styles.emptySubtitle}>Học viên không có ca lên lớp nào được lên lịch cho ngày này.</Text>
+        <View style={[styles.emptyContainer, {backgroundColor: colors.card, borderRadius: 16, padding: 20, margin: 15}]}>
+          <Icon name="calendar-o" size={48} color={colors.placeholder} />
+          <Text style={[styles.emptyTitle, {color: colors.text}]}>Không có lịch học</Text>
+          <Text style={[styles.emptySubtitle, {color: colors.textSecondary}]}>Học viên không có ca lên lớp nào được lên lịch cho ngày này.</Text>
         </View>
       ) : (
         <FlatList

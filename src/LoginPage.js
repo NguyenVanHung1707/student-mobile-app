@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   TextInput,
   TouchableOpacity,
@@ -21,6 +21,14 @@ import {
   KEYCLOAK_CLIENT_ID,
   KEYCLOAK_TOKEN_ENDPOINT,
 } from './config';
+import {
+  isBiometricsAvailable,
+  isBiometricEnabled,
+  enableBiometricAuth,
+  disableBiometricAuth,
+  authenticateAndGetToken,
+  performSSORefresh,
+} from './BiometricAuthService';
 
 const {width} = Dimensions.get('window');
 
@@ -70,8 +78,68 @@ export default function LoginPage({navigation}) {
   const [isLoading, setIsLoading] = useState(false);
   const [securePassword, setSecurePassword] = useState(true);
 
+  const [bioAvailable, setBioAvailable] = useState(false);
+  const [bioEnabled, setBioEnabled] = useState(false);
+
   const isDark = useColorScheme() === 'dark';
   const theme = getThemeColors(isDark);
+
+  useEffect(() => {
+    const checkBiometrics = async () => {
+      const available = await isBiometricsAvailable();
+      const enabled = await isBiometricEnabled();
+      setBioAvailable(available);
+      setBioEnabled(enabled);
+
+      if (available && enabled) {
+        setTimeout(() => {
+          handleBiometricLogin();
+        }, 500);
+      }
+    };
+    checkBiometrics();
+  }, []);
+
+  const handleBiometricLogin = async () => {
+    try {
+      setIsLoading(true);
+      const credentials = await authenticateAndGetToken();
+      if (credentials && credentials.refreshToken) {
+        const freshAccessToken = await performSSORefresh(credentials.refreshToken);
+        if (freshAccessToken) {
+          try {
+            const {registerFCMTokenWithBackend} = require('./NotificationService');
+            await registerFCMTokenWithBackend(API_BASE_URL, freshAccessToken);
+          } catch (fcmErr) {
+            console.log('Error syncing FCM token during biometric login:', fcmErr);
+          }
+
+          const config = {
+            headers: {
+              Authorization: 'Bearer ' + freshAccessToken,
+            },
+          };
+          const axiosLib = require('axios');
+          const profileResponse = await axiosLib.get(
+            `${API_BASE_URL}/student/profile`,
+            config,
+          );
+          const profileData = profileResponse.data;
+          if (profileData && profileData.profileCompleted === false) {
+            navigation.replace('CompleteProfile');
+          } else {
+            navigation.replace('Home');
+          }
+        } else {
+          Alert.alert('Phiên làm việc hết hạn', 'Vui lòng đăng nhập lại bằng mật khẩu.');
+        }
+      }
+    } catch (err) {
+      console.log('Biometric login failed:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const signIn = (customUsername, customPassword) => {
     const finalUsername = customUsername || username;
@@ -129,42 +197,83 @@ export default function LoginPage({navigation}) {
         }
 
         await AsyncStorage.setItem('accessToken', data.access_token);
-
-        // Fetch student profile to verify completed profile status
-        try {
-          const config = {
-            headers: {
-              Authorization: 'Bearer ' + data.access_token,
-            },
-          };
-          const axiosLib = require('axios'); // Use standard axios import
-          const profileResponse = await axiosLib.get(
-            `${API_BASE_URL}/student/profile`,
-            config,
-          );
-          const profileData = profileResponse.data;
-          console.log(
-            'Student Profile Completion status:',
-            profileData?.profileCompleted,
-          );
-
-          if (profileData && profileData.profileCompleted === false) {
-            navigation.replace('CompleteProfile');
-          } else {
-            navigation.replace('Home');
-          }
-        } catch (err) {
-          console.error('Error fetching student profile status:', err);
-          if (err.response?.status === 403) {
-            Alert.alert(
-              'Từ chối truy cập',
-              'Tài khoản của bạn không có quyền truy cập ứng dụng Sinh viên!',
-            );
-          } else {
-            // General network error fallback (since role was already validated in JWT)
-            navigation.replace('Home');
-          }
+        if (data.refresh_token) {
+          await AsyncStorage.setItem('refreshToken', data.refresh_token);
         }
+
+        const navigateAfterLogin = async token => {
+          try {
+            const config = {
+              headers: {
+                Authorization: 'Bearer ' + token,
+              },
+            };
+            const axiosLib = require('axios');
+            const profileResponse = await axiosLib.get(
+              `${API_BASE_URL}/student/profile`,
+              config,
+            );
+            const profileData = profileResponse.data;
+            console.log(
+              'Student Profile Completion status:',
+              profileData?.profileCompleted,
+            );
+
+            if (profileData && profileData.profileCompleted === false) {
+              navigation.replace('CompleteProfile');
+            } else {
+              navigation.replace('Home');
+            }
+          } catch (err) {
+            console.error('Error fetching student profile status:', err);
+            if (err.response?.status === 403) {
+              Alert.alert(
+                'Từ chối truy cập',
+                'Tài khoản của bạn không có quyền truy cập ứng dụng Sinh viên!',
+              );
+            } else {
+              navigation.replace('Home');
+            }
+          }
+        };
+
+        // Sync push notifications token with backend
+        try {
+          const {registerFCMTokenWithBackend} = require('./NotificationService');
+          await registerFCMTokenWithBackend(API_BASE_URL, data.access_token);
+        } catch (fcmErr) {
+          console.log('Error syncing FCM token:', fcmErr);
+        }
+
+        // Ask to enable biometrics if supported and not yet enabled
+        const available = await isBiometricsAvailable();
+        const enabled = await isBiometricEnabled();
+        if (available && !enabled) {
+          Alert.alert(
+            'Kích hoạt Vân tay/FaceID',
+            'Bạn có muốn kích hoạt đăng nhập nhanh bằng sinh trắc học cho những lần sau không?',
+            [
+              {
+                text: 'Bỏ qua',
+                style: 'cancel',
+                onPress: () => navigateAfterLogin(data.access_token),
+              },
+              {
+                text: 'Kích hoạt',
+                onPress: async () => {
+                  if (data.refresh_token) {
+                    await enableBiometricAuth(finalUsername, data.refresh_token);
+                  }
+                  navigateAfterLogin(data.access_token);
+                },
+              },
+            ],
+            {cancelable: false},
+          );
+          return;
+        }
+
+        navigateAfterLogin(data.access_token);
       })
       .catch(error => {
         console.error(error);
@@ -234,6 +343,19 @@ export default function LoginPage({navigation}) {
               <Text style={styles.primaryButtonText}>ĐĂNG NHẬP SSO</Text>
             )}
           </TouchableOpacity>
+
+          {bioAvailable && bioEnabled && (
+            <TouchableOpacity
+              style={[
+                styles.biometricButton,
+                {borderColor: theme.primary, borderWidth: 1.5, backgroundColor: isDark ? '#0F62FE15' : '#F0F4FA'},
+              ]}
+              onPress={handleBiometricLogin}
+              disabled={isLoading}>
+              <Icon name="fingerprint" size={20} color={theme.primary} style={{marginRight: 10}} />
+              <Text style={[styles.biometricButtonText, {color: theme.primary}]}>ĐĂNG NHẬP SINH TRẮC HỌC</Text>
+            </TouchableOpacity>
+          )}
 
           <View style={styles.forgotRow}>
             <TouchableOpacity style={styles.forgotBtn}>
@@ -474,5 +596,18 @@ const styles = StyleSheet.create({
   signUpText: {
     fontSize: 14,
     fontWeight: '700',
+  },
+  biometricButton: {
+    height: 52,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 12,
+  },
+  biometricButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
 });

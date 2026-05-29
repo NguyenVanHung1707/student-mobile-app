@@ -2,7 +2,8 @@ import React from 'react';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 import {createStackNavigator} from '@react-navigation/stack';
 import Icon from 'react-native-vector-icons/FontAwesome';
-import {useColorScheme} from 'react-native';
+import {useColorScheme, TouchableOpacity} from 'react-native';
+import {useNavigation} from '@react-navigation/native';
 import {getThemeColors} from './Utility';
 import ClassManagement from './ClassManagement';
 import HomePage from './HomePage';
@@ -51,6 +52,7 @@ const ClassManagementStack = () => {
 export default function MainPage() {
   const isDark = useColorScheme() === 'dark';
   const theme = getThemeColors(isDark);
+  const navigation = useNavigation();
 
   return (
     <Tab.Navigator
@@ -107,6 +109,14 @@ export default function MainPage() {
           fontSize: 18,
           letterSpacing: 0.5,
         },
+        headerRight: () => (
+          <TouchableOpacity
+            style={{marginRight: 16, padding: 8}}
+            onPress={() => navigation.navigate('ChangePassword')}
+          >
+            <Icon name="cog" size={20} color={theme.text} />
+          </TouchableOpacity>
+        ),
       })}>
       <Tab.Screen name="Điểm danh" component={HomeScreen} />
       <Tab.Screen name="Lớp học" component={ClassManagementStack} />
@@ -116,4 +126,5 @@ export default function MainPage() {
     </Tab.Navigator>
   );
 }
+
 
