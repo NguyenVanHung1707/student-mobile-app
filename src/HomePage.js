@@ -10,18 +10,45 @@ import {
   ActivityIndicator,
   useColorScheme,
   ScrollView,
+  Image,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import axios from 'axios';
 import {API_URL} from '@env';
 import {getData, getThemeColors} from './Utility';
 import {getVerifiedLocation} from './geofenceLocation';
+import {launchCamera} from 'react-native-image-picker';
 
 export default function AttendanceForm() {
   const [code, setCode] = useState('');
   const [formData, setFormData] = useState(null);
   const [answers, setAnswers] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [capturedImageUri, setCapturedImageUri] = useState(null);
+  const [faceImageBase64, setFaceImageBase64] = useState(null);
+
+  const handleTakeSelfie = () => {
+    launchCamera(
+      {
+        mediaType: 'photo',
+        quality: 0.5,
+        includeBase64: true,
+        cameraType: 'front',
+      },
+      response => {
+        if (response.didCancel) {
+          console.log('User cancelled camera');
+        } else if (response.errorCode) {
+          console.log('Camera Error: ', response.errorCode);
+          Alert.alert('Lỗi camera', 'Không thể khởi động camera để chụp ảnh.');
+        } else if (response.assets && response.assets.length > 0) {
+          const asset = response.assets[0];
+          setCapturedImageUri(asset.uri);
+          setFaceImageBase64(asset.base64);
+        }
+      },
+    );
+  };
 
   const isDark = useColorScheme() === 'dark';
   const theme = getThemeColors(isDark);
@@ -61,8 +88,13 @@ export default function AttendanceForm() {
   };
 
   const handleSubmitAnswers = async () => {
-    setIsLoading(true);
     try {
+      if (formData?.isFaceVerificationRequired && !faceImageBase64) {
+        Alert.alert('Yêu cầu khuôn mặt 📸', 'Vui lòng thực hiện chụp ảnh khuôn mặt selfie của bạn để xác thực chính chủ trước khi nộp điểm danh.');
+        return;
+      }
+
+      setIsLoading(true);
       const location = formData?.isLocationRequired
         ? await getVerifiedLocation()
         : null;
@@ -76,6 +108,7 @@ export default function AttendanceForm() {
           id: answer.id,
           isTrue: answer.isTrue,
         })),
+        faceImageBase64: faceImageBase64 || null,
       });
       console.log(submitData);
 
@@ -98,6 +131,8 @@ export default function AttendanceForm() {
             setFormData(null);
             setAnswers([]);
             setCode('');
+            setCapturedImageUri(null);
+            setFaceImageBase64(null);
           }
         })
         .catch(error => {
@@ -135,6 +170,8 @@ export default function AttendanceForm() {
   const backToFillCode = () => {
     setFormData(null);
     setAnswers([]);
+    setCapturedImageUri(null);
+    setFaceImageBase64(null);
   };
 
   const checkIsTrueFromId = answerId => {
@@ -211,6 +248,50 @@ export default function AttendanceForm() {
             keyExtractor={(item, index) => index.toString()}
             contentContainerStyle={styles.questionsList}
             showsVerticalScrollIndicator={false}
+            ListHeaderComponent={
+              formData.isFaceVerificationRequired ? (
+                <View style={[styles.selfieCard, {backgroundColor: theme.card, borderColor: theme.border}]}>
+                  <View style={styles.selfieHeader}>
+                    <View style={[styles.selfieIconContainer, {backgroundColor: theme.primary + '15'}]}>
+                      <Icon name="camera" size={20} color={theme.primary} />
+                    </View>
+                    <View style={styles.selfieTextContainer}>
+                      <Text style={[styles.selfieTitle, {color: theme.text}]}>Xác thực khuôn mặt 📸</Text>
+                      <Text style={[styles.selfieSubtitleText, {color: theme.textSecondary}]}>
+                        Chụp ảnh khuôn mặt selfie trực tiếp của bạn để hệ thống AI xác thực chính chủ.
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.selfiePreviewContainer}>
+                    {capturedImageUri ? (
+                      <View style={[styles.imageWrapper, {borderColor: theme.primary}]}>
+                        <Image source={{uri: capturedImageUri}} style={styles.capturedImage} />
+                        <View style={styles.successOverlay}>
+                          <Icon name="check-circle" size={12} color="#10B981" style={{marginRight: 4}} />
+                          <Text style={styles.successOverlayText}>Ảnh đã chụp</Text>
+                        </View>
+                      </View>
+                    ) : (
+                      <View style={[styles.placeholderBox, {borderColor: theme.border, backgroundColor: theme.inputBg}]}>
+                        <Icon name="user" size={40} color={theme.placeholder} />
+                        <Text style={[styles.placeholderText, {color: theme.textSecondary}]}>Chưa chụp ảnh</Text>
+                      </View>
+                    )}
+                  </View>
+
+                  <TouchableOpacity
+                    style={[styles.selfieButton, {backgroundColor: capturedImageUri ? theme.primary + '18' : theme.primary}]}
+                    onPress={handleTakeSelfie}
+                  >
+                    <Icon name="camera" size={14} color={capturedImageUri ? theme.primary : '#fff'} style={{marginRight: 8}} />
+                    <Text style={[styles.selfieButtonText, {color: capturedImageUri ? theme.primary : '#fff'}]}>
+                      {capturedImageUri ? 'Chụp lại ảnh khác' : 'Chụp ảnh Selfie'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              ) : null
+            }
             renderItem={({item, index}) => (
               <View style={[styles.questionCard, {backgroundColor: theme.card, borderColor: theme.border}]}>
                 <View style={styles.questionCardHeader}>
@@ -523,5 +604,101 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     textAlign: 'center',
+  },
+  selfieCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 18,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 4},
+    shadowOpacity: 0.02,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  selfieHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  selfieIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  selfieTextContainer: {
+    flex: 1,
+  },
+  selfieTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    marginBottom: 4,
+  },
+  selfieSubtitleText: {
+    fontSize: 11,
+    lineHeight: 15,
+  },
+  selfiePreviewContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  imageWrapper: {
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    borderWidth: 3,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  capturedImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  successOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(10, 14, 23, 0.75)',
+    paddingVertical: 4,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  successOverlayText: {
+    color: '#FFF',
+    fontSize: 9,
+    fontWeight: '800',
+  },
+  placeholderBox: {
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  placeholderText: {
+    fontSize: 11,
+    fontWeight: '700',
+    marginTop: 8,
+  },
+  selfieButton: {
+    height: 44,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+  },
+  selfieButtonText: {
+    fontSize: 13,
+    fontWeight: '700',
   },
 });
