@@ -32,6 +32,7 @@ export default function TakeAssessmentScreen({route, navigation}) {
   const [timeLeft, setTimeLeft] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [syncStatus, setSyncStatus] = useState('Đã đồng bộ');
+  const [isCameraMinimized, setIsCameraMinimized] = useState(false);
 
   const timerRef = useRef(null);
   const saveTimeoutRef = useRef({});
@@ -329,12 +330,29 @@ export default function TakeAssessmentScreen({route, navigation}) {
       {/* Main Body Grid */}
       <View style={styles.body}>
         {assessment?.isCameraRequired && (
-          <View style={styles.cameraBanner}>
-            <Icon name="camera" size={14} color="#d97706" style={{marginRight: 6}} />
-            <Text style={styles.cameraBannerText}>
-              Bài thi yêu cầu Camera giám sát AI. Nên dùng bản WEB để làm bài.
-            </Text>
-          </View>
+          isCameraMinimized ? (
+            <TouchableOpacity
+              style={styles.floatingCameraIcon}
+              onPress={() => setIsCameraMinimized(false)}
+              activeOpacity={0.8}
+            >
+              <Icon name="camera" size={18} color="#FFF" />
+              <View style={styles.pulsingDot} />
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.cameraBanner}>
+              <Icon name="camera" size={14} color="#d97706" style={{marginRight: 6}} />
+              <Text style={styles.cameraBannerText}>
+                Bài thi yêu cầu Camera giám sát AI. Nên dùng bản WEB để làm bài.
+              </Text>
+              <TouchableOpacity
+                onPress={() => setIsCameraMinimized(true)}
+                style={styles.minimizeBannerButton}
+              >
+                <Icon name="minus-circle" size={16} color="#d97706" />
+              </TouchableOpacity>
+            </View>
+          )
         )}
         {/* Scrollable Question detail */}
         {currentQ ? (
@@ -810,5 +828,37 @@ const styles = StyleSheet.create({
     fontSize: 11.5,
     fontWeight: 'bold',
     flex: 1,
+  },
+  minimizeBannerButton: {
+    padding: 2,
+    marginLeft: 6,
+  },
+  floatingCameraIcon: {
+    position: 'absolute',
+    bottom: 25,
+    left: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#1E293B',
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    zIndex: 1000,
+    borderWidth: 1.5,
+    borderColor: '#334155',
+  },
+  pulsingDot: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#10B981',
   },
 });
