@@ -11,6 +11,8 @@ import {
   Platform,
   PermissionsAndroid,
   useColorScheme,
+  Animated,
+  PanResponder,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
@@ -34,6 +36,38 @@ export default function TakeAssessmentScreen({route, navigation}) {
   const [syncStatus, setSyncStatus] = useState('Đã đồng bộ');
   const [isCameraMinimized, setIsCameraMinimized] = useState(false);
 
+  // PanResponder and Animated coordinate for floating camera on mobile
+  const pan = useRef(new Animated.ValueXY({x: 20, y: 120})).current;
+  const valRef = useRef({x: 20, y: 120});
+  useEffect(() => {
+    const listenerId = pan.addListener(value => {
+      valRef.current = value;
+    });
+    return () => {
+      pan.removeListener(listenerId);
+    };
+  }, [pan]);
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderGrant: () => {
+        pan.setOffset({
+          x: valRef.current.x,
+          y: valRef.current.y,
+        });
+        pan.setValue({x: 0, y: 0});
+      },
+      onPanResponderMove: Animated.event([null, {dx: pan.x, dy: pan.y}], {
+        useNativeDriver: false,
+      }),
+      onPanResponderRelease: () => {
+        pan.flattenOffset();
+      },
+    }),
+  ).current;
+
   const timerRef = useRef(null);
   const saveTimeoutRef = useRef({});
 
@@ -45,7 +79,10 @@ export default function TakeAssessmentScreen({route, navigation}) {
         const config = {headers: {Authorization: 'Bearer ' + token}};
 
         // Fetch submission details (which includes the questions and student's current answers)
-        const gradesRes = await axios.get(`${API_BASE_URL}/submissions/${submissionId}/grades`, config);
+        const gradesRes = await axios.get(
+          `${API_BASE_URL}/submissions/${submissionId}/grades`,
+          config,
+        );
         const submissionData = gradesRes.data;
 
         // Initialize answers map
@@ -59,7 +96,10 @@ export default function TakeAssessmentScreen({route, navigation}) {
         setAnswers(ansMap);
 
         // Fetch course assessments to get metadata of this specific assessment (duration, isLocationRequired, etc.)
-        const assessmentsRes = await axios.get(`${API_BASE_URL}/courses/${courseId}/assessments`, config);
+        const assessmentsRes = await axios.get(
+          `${API_BASE_URL}/courses/${courseId}/assessments`,
+          config,
+        );
         const matched = assessmentsRes.data?.find(a => a.id === assessmentId);
 
         if (matched) {
@@ -70,7 +110,7 @@ export default function TakeAssessmentScreen({route, navigation}) {
             Alert.alert(
               'Yêu cầu giám sát Camera (AI)',
               'Bài thi này yêu cầu bật Camera giám sát góc nhìn thời gian thực. Để làm bài thi có sự giám sát AI tối ưu nhất, vui lòng sử dụng phiên bản WEB để làm bài thi.',
-              [{ text: 'Đã hiểu' }]
+              [{text: 'Đã hiểu'}],
             );
           }
 
@@ -106,7 +146,9 @@ export default function TakeAssessmentScreen({route, navigation}) {
     loadSession();
 
     return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
       // Clear all autosave timers on unmount
       Object.values(saveTimeoutRef.current).forEach(t => clearTimeout(t));
     };
@@ -132,7 +174,11 @@ export default function TakeAssessmentScreen({route, navigation}) {
           answerText: answerText || null,
         };
 
-        await axios.post(`${API_BASE_URL}/submissions/${submissionId}/save-draft`, payload, config);
+        await axios.post(
+          `${API_BASE_URL}/submissions/${submissionId}/save-draft`,
+          payload,
+          config,
+        );
         setSyncStatus('Đã đồng bộ');
       } catch (err) {
         console.error('Error saving draft:', err);
@@ -171,7 +217,8 @@ export default function TakeAssessmentScreen({route, navigation}) {
         PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
         {
           title: 'Quyền truy cập vị trí',
-          message: 'Ứng dụng cần định vị GPS để xác thực vị trí khi nộp bài thi.',
+          message:
+            'Ứng dụng cần định vị GPS để xác thực vị trí khi nộp bài thi.',
           buttonNeutral: 'Hỏi lại sau',
           buttonNegative: 'Từ chối',
           buttonPositive: 'Đồng ý',
@@ -248,19 +295,35 @@ export default function TakeAssessmentScreen({route, navigation}) {
         };
       }
 
-      await axios.post(`${API_BASE_URL}/submissions/${submissionId}/submit`, payload, config);
-      Alert.alert('Thành công', isAuto ? 'Bài thi đã được tự động nộp thành công!' : 'Nộp bài thi thành công!');
+      await axios.post(
+        `${API_BASE_URL}/submissions/${submissionId}/submit`,
+        payload,
+        config,
+      );
+      Alert.alert(
+        'Thành công',
+        isAuto
+          ? 'Bài thi đã được tự động nộp thành công!'
+          : 'Nộp bài thi thành công!',
+      );
       navigation.goBack();
     } catch (err) {
       console.error('Submit error:', err);
-      Alert.alert('Lỗi nộp bài', err.response?.data?.message || err.message || 'Có lỗi xảy ra khi nộp bài.');
+      Alert.alert(
+        'Lỗi nộp bài',
+        err.response?.data?.message ||
+          err.message ||
+          'Có lỗi xảy ra khi nộp bài.',
+      );
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const formatTime = secs => {
-    if (secs === null) return '--:--';
+    if (secs === null) {
+      return '--:--';
+    }
     const m = Math.floor(secs / 60);
     const s = secs % 60;
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
@@ -270,7 +333,9 @@ export default function TakeAssessmentScreen({route, navigation}) {
     return (
       <View style={[styles.center, {backgroundColor: colors.bg}]}>
         <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={[styles.loadingText, {color: colors.textSecondary}]}>Đang tải đề thi & chuẩn bị phiên làm bài...</Text>
+        <Text style={[styles.loadingText, {color: colors.textSecondary}]}>
+          Đang tải đề thi & chuẩn bị phiên làm bài...
+        </Text>
       </View>
     );
   }
@@ -281,13 +346,21 @@ export default function TakeAssessmentScreen({route, navigation}) {
   return (
     <View style={[styles.container, {backgroundColor: colors.bg}]}>
       {/* Top Header Panel */}
-      <View style={[styles.header, {backgroundColor: colors.card, borderBottomColor: colors.border}]}>
+      <View
+        style={[
+          styles.header,
+          {backgroundColor: colors.card, borderBottomColor: colors.border},
+        ]}>
         <View style={styles.headerRow}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}>
             <Icon name="arrow-left" size={16} color={colors.text} />
           </TouchableOpacity>
           <View style={styles.headerTitleContainer}>
-            <Text style={[styles.title, {color: colors.text}]} numberOfLines={1}>
+            <Text
+              style={[styles.title, {color: colors.text}]}
+              numberOfLines={1}>
               {assessment.title}
             </Text>
             <Text style={[styles.subtitle, {color: colors.textSecondary}]}>
@@ -299,27 +372,42 @@ export default function TakeAssessmentScreen({route, navigation}) {
         {/* Sync & Timer status */}
         <View style={[styles.statusRow, {borderTopColor: colors.border}]}>
           <View style={styles.syncContainer}>
-            <Icon name="cloud-upload" size={12} color={colors.textSecondary} style={{marginRight: 4}} />
-            <Text style={[styles.syncText, {color: colors.textSecondary}]}>{syncStatus}</Text>
+            <Icon
+              name="cloud-upload"
+              size={12}
+              color={colors.textSecondary}
+              style={{marginRight: 4}}
+            />
+            <Text style={[styles.syncText, {color: colors.textSecondary}]}>
+              {syncStatus}
+            </Text>
           </View>
 
           {timeLeft !== null && (
-            <View style={[
-              styles.timerBadge,
-              {backgroundColor: isDark ? '#10B98115' : '#f0fdf4', borderColor: isDark ? '#10B98140' : '#bfe1d0'},
-              timeLeft < 300 && {backgroundColor: isDark ? '#EF444415' : '#fef2f2', borderColor: isDark ? '#EF444440' : '#fca5a5'}
-            ]}>
+            <View
+              style={[
+                styles.timerBadge,
+                {
+                  backgroundColor: isDark ? '#10B98115' : '#f0fdf4',
+                  borderColor: isDark ? '#10B98140' : '#bfe1d0',
+                },
+                timeLeft < 300 && {
+                  backgroundColor: isDark ? '#EF444415' : '#fef2f2',
+                  borderColor: isDark ? '#EF444440' : '#fca5a5',
+                },
+              ]}>
               <Icon
                 name="clock-o"
                 size={14}
                 color={timeLeft < 300 ? '#ef4444' : colors.primary}
                 style={{marginRight: 6}}
               />
-              <Text style={[
-                styles.timerText,
-                {color: colors.primary},
-                timeLeft < 300 && {color: '#ef4444'}
-              ]}>
+              <Text
+                style={[
+                  styles.timerText,
+                  {color: colors.primary},
+                  timeLeft < 300 && {color: '#ef4444'},
+                ]}>
                 {formatTime(timeLeft)}
               </Text>
             </View>
@@ -330,84 +418,138 @@ export default function TakeAssessmentScreen({route, navigation}) {
       {/* Main Body Grid */}
       <View style={styles.body}>
         {assessment?.isCameraRequired && (
-          isCameraMinimized ? (
-            <TouchableOpacity
-              style={styles.floatingCameraIcon}
-              onPress={() => setIsCameraMinimized(false)}
-              activeOpacity={0.8}
-            >
-              <Icon name="camera" size={18} color="#FFF" />
-              <View style={styles.pulsingDot} />
-            </TouchableOpacity>
-          ) : (
-            <View style={styles.cameraBanner}>
-              <Icon name="camera" size={14} color="#d97706" style={{marginRight: 6}} />
-              <Text style={styles.cameraBannerText}>
-                Bài thi yêu cầu Camera giám sát AI. Nên dùng bản WEB để làm bài.
-              </Text>
+          <Animated.View
+            {...panResponder.panHandlers}
+            style={[
+              styles.floatingContainer,
+              {
+                transform: pan.getTranslateTransform(),
+              },
+            ]}>
+            {isCameraMinimized ? (
               <TouchableOpacity
-                onPress={() => setIsCameraMinimized(true)}
-                style={styles.minimizeBannerButton}
-              >
-                <Icon name="minus-circle" size={16} color="#d97706" />
+                style={styles.floatingCameraIconInner}
+                onPress={() => setIsCameraMinimized(false)}
+                activeOpacity={0.8}>
+                <Icon name="camera" size={18} color="#FFF" />
+                <View style={styles.pulsingDot} />
               </TouchableOpacity>
-            </View>
-          )
+            ) : (
+              <View style={styles.cameraBannerInner}>
+                <Icon
+                  name="camera"
+                  size={14}
+                  color="#d97706"
+                  style={{marginRight: 6}}
+                />
+                <Text style={styles.cameraBannerText}>
+                  Bài thi yêu cầu Camera giám sát AI. Nên dùng bản WEB để làm
+                  bài.
+                </Text>
+                <TouchableOpacity
+                  onPress={() => setIsCameraMinimized(true)}
+                  style={styles.minimizeBannerButton}>
+                  <Icon name="minus-circle" size={16} color="#d97706" />
+                </TouchableOpacity>
+              </View>
+            )}
+          </Animated.View>
         )}
         {/* Scrollable Question detail */}
         {currentQ ? (
-          <ScrollView style={styles.questionPanel} contentContainerStyle={{paddingBottom: 25}}>
+          <ScrollView
+            style={styles.questionPanel}
+            contentContainerStyle={{paddingBottom: 25}}>
             <View style={styles.qHeader}>
-              <Text style={[styles.qNumText, {color: colors.primary, backgroundColor: colors.bgSecondary}]}>Câu {currentQIdx + 1}</Text>
+              <Text
+                style={[
+                  styles.qNumText,
+                  {color: colors.primary, backgroundColor: colors.bgSecondary},
+                ]}>
+                Câu {currentQIdx + 1}
+              </Text>
               <Text style={[styles.qScoreText, {color: colors.textSecondary}]}>
-                [{currentQ.type === 'MULTIPLE_CHOICE' ? 'Trắc nghiệm' : currentQ.type === 'SHORT_ANSWER' ? 'Trả lời ngắn' : 'Tự luận'} - {currentQ.score}đ]
+                [
+                {currentQ.type === 'MULTIPLE_CHOICE'
+                  ? 'Trắc nghiệm'
+                  : currentQ.type === 'SHORT_ANSWER'
+                  ? 'Trả lời ngắn'
+                  : 'Tự luận'}{' '}
+                - {currentQ.score}đ]
               </Text>
             </View>
 
-            <Text style={[styles.qContent, {color: colors.text}]}>{currentQ.content}</Text>
+            <Text style={[styles.qContent, {color: colors.text}]}>
+              {currentQ.content}
+            </Text>
 
             {/* Answer Controls */}
             {currentQ.type === 'MULTIPLE_CHOICE' && (
               <View style={styles.choicesGrid}>
                 {(() => {
                   try {
-                     const meta = JSON.parse(currentQ.metadata || '{}');
-                     return meta.choices?.map(c => {
-                       const isSelected = answers[currentQ.id]?.selectedChoice === c.key;
-                       return (
-                         <TouchableOpacity
-                           key={c.key}
-                           style={[
-                             styles.choiceCard,
-                             {backgroundColor: colors.card, borderColor: colors.border},
-                             isSelected && {borderColor: colors.primary, backgroundColor: isDark ? '#0F62FE15' : '#f0f4fa'}
-                           ]}
-                           onPress={() => handleChoiceSelect(currentQ.id, c.key)}>
-                           <View style={[
-                             styles.choiceIndex,
-                             {backgroundColor: colors.bgSecondary, borderColor: colors.border},
-                             isSelected && {backgroundColor: colors.primary, borderColor: colors.primary}
-                           ]}>
-                             <Text style={[
-                               styles.choiceIndexText,
-                               {color: colors.textSecondary},
-                               isSelected && {color: '#ffffff'}
-                             ]}>
-                               {c.key}
-                             </Text>
-                           </View>
-                           <Text style={[
-                             styles.choiceText,
-                             {color: colors.text},
-                             isSelected && {color: colors.primary, fontWeight: '700'}
-                           ]}>
-                             {c.text}
-                           </Text>
-                         </TouchableOpacity>
-                       );
-                     });
+                    const meta = JSON.parse(currentQ.metadata || '{}');
+                    return meta.choices?.map(c => {
+                      const isSelected =
+                        answers[currentQ.id]?.selectedChoice === c.key;
+                      return (
+                        <TouchableOpacity
+                          key={c.key}
+                          style={[
+                            styles.choiceCard,
+                            {
+                              backgroundColor: colors.card,
+                              borderColor: colors.border,
+                            },
+                            isSelected && {
+                              borderColor: colors.primary,
+                              backgroundColor: isDark ? '#0F62FE15' : '#f0f4fa',
+                            },
+                          ]}
+                          onPress={() =>
+                            handleChoiceSelect(currentQ.id, c.key)
+                          }>
+                          <View
+                            style={[
+                              styles.choiceIndex,
+                              {
+                                backgroundColor: colors.bgSecondary,
+                                borderColor: colors.border,
+                              },
+                              isSelected && {
+                                backgroundColor: colors.primary,
+                                borderColor: colors.primary,
+                              },
+                            ]}>
+                            <Text
+                              style={[
+                                styles.choiceIndexText,
+                                {color: colors.textSecondary},
+                                isSelected && {color: '#ffffff'},
+                              ]}>
+                              {c.key}
+                            </Text>
+                          </View>
+                          <Text
+                            style={[
+                              styles.choiceText,
+                              {color: colors.text},
+                              isSelected && {
+                                color: colors.primary,
+                                fontWeight: '700',
+                              },
+                            ]}>
+                            {c.text}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    });
                   } catch (e) {
-                    return <Text style={[styles.errorText, {color: '#ef4444'}]}>Lỗi hiển thị phương án lựa chọn.</Text>;
+                    return (
+                      <Text style={[styles.errorText, {color: '#ef4444'}]}>
+                        Lỗi hiển thị phương án lựa chọn.
+                      </Text>
+                    );
                   }
                 })()}
               </View>
@@ -415,9 +557,19 @@ export default function TakeAssessmentScreen({route, navigation}) {
 
             {currentQ.type === 'SHORT_ANSWER' && (
               <View style={styles.textInputContainer}>
-                <Text style={[styles.inputLabel, {color: colors.textSecondary}]}>Nhập đáp án ngắn:</Text>
+                <Text
+                  style={[styles.inputLabel, {color: colors.textSecondary}]}>
+                  Nhập đáp án ngắn:
+                </Text>
                 <TextInput
-                  style={[styles.textInput, {backgroundColor: colors.inputBg, borderColor: colors.border, color: colors.inputText}]}
+                  style={[
+                    styles.textInput,
+                    {
+                      backgroundColor: colors.inputBg,
+                      borderColor: colors.border,
+                      color: colors.inputText,
+                    },
+                  ]}
                   placeholder="Điền từ khóa đáp án..."
                   placeholderTextColor={colors.placeholder}
                   value={answers[currentQ.id]?.answerText || ''}
@@ -429,12 +581,19 @@ export default function TakeAssessmentScreen({route, navigation}) {
 
             {currentQ.type === 'ESSAY' && (
               <View style={styles.textInputContainer}>
-                <Text style={[styles.inputLabel, {color: colors.textSecondary}]}>Trình bày bài giải tự luận:</Text>
+                <Text
+                  style={[styles.inputLabel, {color: colors.textSecondary}]}>
+                  Trình bày bài giải tự luận:
+                </Text>
                 <TextInput
                   style={[
                     styles.textInput,
                     styles.textArea,
-                    {backgroundColor: colors.inputBg, borderColor: colors.border, color: colors.inputText}
+                    {
+                      backgroundColor: colors.inputBg,
+                      borderColor: colors.border,
+                      color: colors.inputText,
+                    },
                   ]}
                   placeholder="Nhập nội dung tự luận chi tiết tại đây..."
                   placeholderTextColor={colors.placeholder}
@@ -449,43 +608,66 @@ export default function TakeAssessmentScreen({route, navigation}) {
           </ScrollView>
         ) : (
           <View style={[styles.center, {backgroundColor: colors.bg}]}>
-            <Text style={[styles.errorText, {color: '#ef4444'}]}>Không tìm thấy câu hỏi!</Text>
+            <Text style={[styles.errorText, {color: '#ef4444'}]}>
+              Không tìm thấy câu hỏi!
+            </Text>
           </View>
         )}
       </View>
 
       {/* Bottom Sticky Navigator & Submit Button */}
-      <View style={[styles.footer, {backgroundColor: colors.card, borderTopColor: colors.border}]}>
+      <View
+        style={[
+          styles.footer,
+          {backgroundColor: colors.card, borderTopColor: colors.border},
+        ]}>
         {/* Prev / Next buttons */}
         <View style={styles.navRow}>
           <TouchableOpacity
             style={[
               styles.navButton,
               {backgroundColor: colors.bgSecondary, borderColor: colors.border},
-              currentQIdx === 0 && styles.navButtonDisabled
+              currentQIdx === 0 && styles.navButtonDisabled,
             ]}
             disabled={currentQIdx === 0}
             onPress={() => setCurrentQIdx(currentQIdx - 1)}>
-            <Icon name="chevron-left" size={12} color={currentQIdx === 0 ? colors.placeholder : colors.textSecondary} />
-            <Text style={[
-              styles.navButtonText,
-              {color: colors.textSecondary},
-              currentQIdx === 0 && {color: colors.placeholder}
-            ]}>
+            <Icon
+              name="chevron-left"
+              size={12}
+              color={
+                currentQIdx === 0 ? colors.placeholder : colors.textSecondary
+              }
+            />
+            <Text
+              style={[
+                styles.navButtonText,
+                {color: colors.textSecondary},
+                currentQIdx === 0 && {color: colors.placeholder},
+              ]}>
               Trước đó
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.gridToggleButton, {backgroundColor: isDark ? '#0F62FE15' : '#f0f4fa', borderColor: colors.primary}]}
+            style={[
+              styles.gridToggleButton,
+              {
+                backgroundColor: isDark ? '#0F62FE15' : '#f0f4fa',
+                borderColor: colors.primary,
+              },
+            ]}
             onPress={() => {
               // Open modal sheet or alert showing question list mapping
               Alert.alert(
                 'Sơ đồ câu hỏi',
                 questions
                   .map((q, idx) => {
-                    const isAnswered = answers[q.id]?.selectedChoice || answers[q.id]?.answerText;
-                    return `Câu ${idx + 1}: ${isAnswered ? '✅ Đã làm' : '❌ Chưa làm'}`;
+                    const isAnswered =
+                      answers[q.id]?.selectedChoice ||
+                      answers[q.id]?.answerText;
+                    return `Câu ${idx + 1}: ${
+                      isAnswered ? '✅ Đã làm' : '❌ Chưa làm'
+                    }`;
                   })
                   .join('\n'),
               );
@@ -500,30 +682,49 @@ export default function TakeAssessmentScreen({route, navigation}) {
             style={[
               styles.navButton,
               {backgroundColor: colors.bgSecondary, borderColor: colors.border},
-              currentQIdx === totalQuestions - 1 && styles.navButtonDisabled
+              currentQIdx === totalQuestions - 1 && styles.navButtonDisabled,
             ]}
             disabled={currentQIdx === totalQuestions - 1}
             onPress={() => setCurrentQIdx(currentQIdx + 1)}>
-            <Text style={[
-              styles.navButtonText,
-              {color: colors.textSecondary},
-              currentQIdx === totalQuestions - 1 && {color: colors.placeholder}
-            ]}>
+            <Text
+              style={[
+                styles.navButtonText,
+                {color: colors.textSecondary},
+                currentQIdx === totalQuestions - 1 && {
+                  color: colors.placeholder,
+                },
+              ]}>
               Tiếp theo
             </Text>
-            <Icon name="chevron-right" size={12} color={currentQIdx === totalQuestions - 1 ? colors.placeholder : colors.textSecondary} />
+            <Icon
+              name="chevron-right"
+              size={12}
+              color={
+                currentQIdx === totalQuestions - 1
+                  ? colors.placeholder
+                  : colors.textSecondary
+              }
+            />
           </TouchableOpacity>
         </View>
 
         <TouchableOpacity
-          style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
+          style={[
+            styles.submitButton,
+            isSubmitting && styles.submitButtonDisabled,
+          ]}
           disabled={isSubmitting}
           onPress={handleManualSubmit}>
           {isSubmitting ? (
             <ActivityIndicator size="small" color="#ffffff" />
           ) : (
             <>
-              <Icon name="send" size={14} color="#ffffff" style={{marginRight: 8}} />
+              <Icon
+                name="send"
+                size={14}
+                color="#ffffff"
+                style={{marginRight: 8}}
+              />
               <Text style={styles.submitButtonText}>Nộp Bài Thi Ngay</Text>
             </>
           )}
@@ -811,7 +1012,28 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 14,
   },
-  cameraBanner: {
+  floatingContainer: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    zIndex: 1000,
+  },
+  floatingCameraIconInner: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#1E293B',
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 6,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 3},
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    borderWidth: 1.5,
+    borderColor: '#334155',
+  },
+  cameraBannerInner: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#fffbeb',
@@ -819,9 +1041,12 @@ const styles = StyleSheet.create({
     borderColor: '#fef3c7',
     padding: 10,
     borderRadius: 10,
-    marginHorizontal: 15,
-    marginTop: 10,
-    marginBottom: 5,
+    width: 280,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
   },
   cameraBannerText: {
     color: '#b45309',
@@ -832,25 +1057,6 @@ const styles = StyleSheet.create({
   minimizeBannerButton: {
     padding: 2,
     marginLeft: 6,
-  },
-  floatingCameraIcon: {
-    position: 'absolute',
-    bottom: 25,
-    left: 20,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#1E293B',
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 6,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    zIndex: 1000,
-    borderWidth: 1.5,
-    borderColor: '#334155',
   },
   pulsingDot: {
     position: 'absolute',
