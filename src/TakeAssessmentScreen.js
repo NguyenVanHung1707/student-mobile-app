@@ -62,17 +62,16 @@ export default function TakeAssessmentScreen({route, navigation}) {
         const matched = assessmentsRes.data?.find(a => a.id === assessmentId);
 
         if (matched) {
-          if (matched.isCameraRequired) {
-            Alert.alert(
-              'Không thể làm bài trên điện thoại',
-              'Bài thi này yêu cầu giám sát Camera trực tiếp (AI Proctoring) và chỉ có thể thực hiện trên phiên bản WEB (Máy tính). Vui lòng sử dụng máy tính để thực hiện bài thi!',
-              [{ text: 'Đã hiểu', onPress: () => navigation.goBack() }],
-              { cancelable: false }
-            );
-            return;
-          }
           setAssessment(matched);
           setQuestions(matched.questions || []);
+
+          if (matched.isCameraRequired) {
+            Alert.alert(
+              'Yêu cầu giám sát Camera (AI)',
+              'Bài thi này yêu cầu bật Camera giám sát góc nhìn thời gian thực. Để làm bài thi có sự giám sát AI tối ưu nhất, vui lòng sử dụng phiên bản WEB để làm bài thi.',
+              [{ text: 'Đã hiểu' }]
+            );
+          }
 
           // Setup countdown timer
           if (matched.durationMinutes) {
