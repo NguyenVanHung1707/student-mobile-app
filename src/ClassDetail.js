@@ -169,6 +169,15 @@ export default function ClassDetail() {
     });
 
   const handleStartExam = async (item) => {
+    if (item.isCameraRequired) {
+      Alert.alert(
+        'Không thể làm bài trên điện thoại',
+        'Bài thi này yêu cầu giám sát Camera trực tiếp (AI Proctoring) và chỉ có thể thực hiện trên phiên bản WEB (Máy tính). Vui lòng sử dụng máy tính để thực hiện bài thi!',
+        [{ text: 'Đã hiểu' }]
+      );
+      return;
+    }
+
     if (item.submissionStatus === 'IN_PROGRESS' && item.submissionId) {
       navigation.navigate('TakeAssessment', {
         assessmentId: item.id,
