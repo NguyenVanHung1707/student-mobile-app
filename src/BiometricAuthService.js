@@ -70,7 +70,7 @@ export const authenticateAndGetToken = async () => {
       authenticationPrompt: {
         title: 'Xác thực sinh trắc học',
         subtitle: 'Vui lòng xác thực vân tay/FaceID để mở khóa ứng dụng',
-        description: 'Xác thực vân tay/FaceID bảo mật phối hợp Keycloak SSO',
+        description: 'Xác thực sinh trắc học bảo mật để đăng nhập nhanh',
         cancel: 'Hủy bỏ',
       },
     });

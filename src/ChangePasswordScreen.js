@@ -99,7 +99,7 @@ export default function ChangePasswordScreen({navigation}) {
 
           <Text style={[styles.title, {color: theme.text}]}>ĐỔI MẬT KHẨU</Text>
           <Text style={[styles.subtitle, {color: theme.textSecondary}]}>
-            Nhập mật khẩu cũ và mật khẩu mới của bạn để cập nhật trên hệ thống bảo mật Keycloak SSO.
+            Nhập mật khẩu cũ và mật khẩu mới của bạn để cập nhật mật khẩu bảo mật.
           </Text>
 
           {/* Current Password */}
