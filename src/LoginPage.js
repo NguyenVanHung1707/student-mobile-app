@@ -11,6 +11,7 @@ import {
   useColorScheme,
   ScrollView,
   Dimensions,
+  Linking,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import {storeData, getData, getThemeColors} from './Utility';
@@ -20,6 +21,7 @@ import {
   API_BASE_URL,
   KEYCLOAK_CLIENT_ID,
   KEYCLOAK_TOKEN_ENDPOINT,
+  KEYCLOAK_AUTH_ENDPOINT,
 } from './config';
 import {
   isBiometricsAvailable,
@@ -98,6 +100,33 @@ export default function LoginPage({navigation}) {
       }
     };
     checkBiometrics();
+
+    const handleDeepLink = async (event) => {
+      const url = event.url || event;
+      if (!url) return;
+      console.log('Incoming Deep Link:', url);
+      
+      if (url.includes('lophocso://student-callback')) {
+        const codeMatch = url.match(/[?&]code=([^&]+)/);
+        const code = codeMatch ? codeMatch[1] : null;
+        if (code) {
+          console.log('Received auth code via deep link:', code);
+          await exchangeCodeForToken(code);
+        }
+      }
+    };
+
+    const subscription = Linking.addEventListener('url', handleDeepLink);
+
+    Linking.getInitialURL().then((url) => {
+      if (url) {
+        handleDeepLink(url);
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
   }, []);
 
   const handleBiometricLogin = async () => {
@@ -136,6 +165,152 @@ export default function LoginPage({navigation}) {
       }
     } catch (err) {
       console.log('Biometric login failed:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleAuthSuccess = async (data, explicitUsername = null) => {
+    if (!data.access_token) {
+      throw new Error('Missing access token');
+    }
+
+    const payload = decodeJwt(data.access_token);
+    const roles = payload?.realm_access?.roles || [];
+    if (!roles.includes('student')) {
+      Alert.alert(
+        'Từ chối truy cập',
+        'Tài khoản của bạn là Giảng viên/Admin. Vui lòng đăng nhập bằng tài khoản Sinh viên!',
+      );
+      setIsLoading(false);
+      return;
+    }
+
+    await AsyncStorage.setItem('accessToken', data.access_token);
+    if (data.refresh_token) {
+      await AsyncStorage.setItem('refreshToken', data.refresh_token);
+    }
+
+    const navigateAfterLogin = async token => {
+      try {
+        const config = {
+          headers: {
+            Authorization: 'Bearer ' + token,
+          },
+        };
+        const axiosLib = require('axios');
+        const profileResponse = await axiosLib.get(
+          `${API_BASE_URL}/student/profile`,
+          config,
+        );
+        const profileData = profileResponse.data;
+        console.log(
+          'Student Profile Completion status:',
+          profileData?.profileCompleted,
+        );
+
+        if (profileData && profileData.profileCompleted === false) {
+          navigation.replace('CompleteProfile');
+        } else {
+          navigation.replace('Home');
+        }
+      } catch (err) {
+        console.error('Error fetching student profile status:', err);
+        if (err.response?.status === 403) {
+          Alert.alert(
+            'Từ chối truy cập',
+            'Tài khoản của bạn không có quyền truy cập ứng dụng Sinh viên!',
+          );
+        } else {
+          navigation.replace('Home');
+        }
+      }
+    };
+
+    // Sync push notifications token with backend
+    try {
+      const {registerFCMTokenWithBackend} = require('./NotificationService');
+      await registerFCMTokenWithBackend(API_BASE_URL, data.access_token);
+    } catch (fcmErr) {
+      console.log('Error syncing FCM token:', fcmErr);
+    }
+
+    const available = await isBiometricsAvailable();
+    const enabled = await isBiometricEnabled();
+    if (available && !enabled) {
+      Alert.alert(
+        'Kích hoạt Vân tay/FaceID',
+        'Bạn có muốn kích hoạt đăng nhập nhanh bằng sinh trắc học cho những lần sau không?',
+        [
+          {
+            text: 'Bỏ qua',
+            style: 'cancel',
+            onPress: () => navigateAfterLogin(data.access_token),
+          },
+          {
+            text: 'Kích hoạt',
+            onPress: async () => {
+              const usernameFromJwt = explicitUsername || payload?.preferred_username || 'user';
+              if (data.refresh_token) {
+                await enableBiometricAuth(usernameFromJwt, data.refresh_token);
+              }
+              navigateAfterLogin(data.access_token);
+            },
+          },
+        ],
+        {cancelable: false},
+      );
+      return;
+    }
+
+    navigateAfterLogin(data.access_token);
+  };
+
+  const handleOAuthLogin = (provider) => {
+    const redirectUri = 'lophocso://student-callback';
+    const authUrl = `${KEYCLOAK_AUTH_ENDPOINT}?client_id=${KEYCLOAK_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=openid&kc_idp_hint=${provider}`;
+    
+    console.log('Opening OAuth Auth URL:', authUrl);
+    Linking.openURL(authUrl).catch(err => {
+      console.error('Error opening OAuth URL:', err);
+      Alert.alert('Lỗi', 'Không thể mở trình duyệt đăng nhập.');
+    });
+  };
+
+  const exchangeCodeForToken = async (code) => {
+    setIsLoading(true);
+    try {
+      const redirectUri = 'lophocso://student-callback';
+      const myHeaders = new Headers();
+      myHeaders.append('Content-Type', 'application/x-www-form-urlencoded');
+
+      const urlencoded = new URLSearchParams({
+        grant_type: 'authorization_code',
+        client_id: KEYCLOAK_CLIENT_ID,
+        code: code,
+        redirect_uri: redirectUri,
+      }).toString();
+
+      const requestOptions = {
+        method: 'POST',
+        headers: myHeaders,
+        body: urlencoded,
+        redirect: 'follow',
+      };
+
+      console.log('Exchanging auth code for token...');
+      const response = await fetch(KEYCLOAK_TOKEN_ENDPOINT, requestOptions);
+      if (!response.ok) {
+        const errText = await response.text();
+        console.error('Exchange token error response:', errText);
+        throw new Error('Đăng nhập bằng tài khoản mạng xã hội thất bại');
+      }
+
+      const result = await response.json();
+      await handleAuthSuccess(result);
+    } catch (error) {
+      console.error('OAuth token exchange error:', error);
+      Alert.alert('Lỗi đăng nhập', error.message || 'Không thể liên kết tài khoản.');
     } finally {
       setIsLoading(false);
     }
@@ -180,100 +355,7 @@ export default function LoginPage({navigation}) {
         return response.json();
       })
       .then(async data => {
-        if (!data.access_token) {
-          throw new Error('Missing access token');
-        }
-
-        // Verify client-side role first
-        const payload = decodeJwt(data.access_token);
-        const roles = payload?.realm_access?.roles || [];
-        if (!roles.includes('student')) {
-          Alert.alert(
-            'Từ chối truy cập',
-            'Tài khoản của bạn là Giảng viên/Admin. Vui lòng đăng nhập bằng tài khoản Sinh viên!',
-          );
-          setIsLoading(false);
-          return;
-        }
-
-        await AsyncStorage.setItem('accessToken', data.access_token);
-        if (data.refresh_token) {
-          await AsyncStorage.setItem('refreshToken', data.refresh_token);
-        }
-
-        const navigateAfterLogin = async token => {
-          try {
-            const config = {
-              headers: {
-                Authorization: 'Bearer ' + token,
-              },
-            };
-            const axiosLib = require('axios');
-            const profileResponse = await axiosLib.get(
-              `${API_BASE_URL}/student/profile`,
-              config,
-            );
-            const profileData = profileResponse.data;
-            console.log(
-              'Student Profile Completion status:',
-              profileData?.profileCompleted,
-            );
-
-            if (profileData && profileData.profileCompleted === false) {
-              navigation.replace('CompleteProfile');
-            } else {
-              navigation.replace('Home');
-            }
-          } catch (err) {
-            console.error('Error fetching student profile status:', err);
-            if (err.response?.status === 403) {
-              Alert.alert(
-                'Từ chối truy cập',
-                'Tài khoản của bạn không có quyền truy cập ứng dụng Sinh viên!',
-              );
-            } else {
-              navigation.replace('Home');
-            }
-          }
-        };
-
-        // Sync push notifications token with backend
-        try {
-          const {registerFCMTokenWithBackend} = require('./NotificationService');
-          await registerFCMTokenWithBackend(API_BASE_URL, data.access_token);
-        } catch (fcmErr) {
-          console.log('Error syncing FCM token:', fcmErr);
-        }
-
-        // Ask to enable biometrics if supported and not yet enabled
-        const available = await isBiometricsAvailable();
-        const enabled = await isBiometricEnabled();
-        if (available && !enabled) {
-          Alert.alert(
-            'Kích hoạt Vân tay/FaceID',
-            'Bạn có muốn kích hoạt đăng nhập nhanh bằng sinh trắc học cho những lần sau không?',
-            [
-              {
-                text: 'Bỏ qua',
-                style: 'cancel',
-                onPress: () => navigateAfterLogin(data.access_token),
-              },
-              {
-                text: 'Kích hoạt',
-                onPress: async () => {
-                  if (data.refresh_token) {
-                    await enableBiometricAuth(finalUsername, data.refresh_token);
-                  }
-                  navigateAfterLogin(data.access_token);
-                },
-              },
-            ],
-            {cancelable: false},
-          );
-          return;
-        }
-
-        navigateAfterLogin(data.access_token);
+        await handleAuthSuccess(data, finalUsername);
       })
       .catch(error => {
         console.error(error);
@@ -367,14 +449,14 @@ export default function LoginPage({navigation}) {
         <View style={styles.socialContainer}>
           <View style={styles.dividerRow}>
             <View style={[styles.dividerLine, {backgroundColor: theme.border}]} />
-            <Text style={[styles.dividerText, {color: theme.textSecondary}]}>HOẶC ĐĂNG NHẬP NHANH BẰNG</Text>
+            <Text style={[styles.dividerText, {color: theme.textSecondary}]}>HOẶC ĐĂNG NHẬP BẰNG</Text>
             <View style={[styles.dividerLine, {backgroundColor: theme.border}]} />
           </View>
 
           <View style={styles.socialButtonRow}>
             <TouchableOpacity
               style={[styles.socialButton, styles.googleBtn, {borderColor: theme.border}]}
-              onPress={() => signIn('google_student', 'password')}
+              onPress={() => handleOAuthLogin('google')}
               disabled={isLoading}
             >
               <Icon name="google" size={18} color="#EA4335" style={styles.socialIcon} />
@@ -383,7 +465,7 @@ export default function LoginPage({navigation}) {
             
             <TouchableOpacity
               style={[styles.socialButton, styles.facebookBtn]}
-              onPress={() => signIn('facebook_student', 'password')}
+              onPress={() => handleOAuthLogin('facebook')}
               disabled={isLoading}
             >
               <Icon name="facebook" size={18} color="#FFFFFF" style={styles.socialIcon} />

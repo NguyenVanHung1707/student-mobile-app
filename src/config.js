@@ -18,6 +18,12 @@ export const KEYCLOAK_TOKEN_ENDPOINT =
     isLocalHost ? `${baseHost}:9000` : baseHost
   }/realms/hung2004/protocol/openid-connect/token`;
 
+export const KEYCLOAK_AUTH_ENDPOINT =
+  `${
+    isLocalHost ? `${baseHost}:9000` : baseHost
+  }/realms/hung2004/protocol/openid-connect/auth`;
+
+
 export const DETECT_FACE_ATTENDANCE_ENDPOINT = `${trimTrailingSlash(
   DETECT_FACE_URL ||
     (isLocalHost ? `${baseHost}:8888` : `${baseHost}/detect-face`),
