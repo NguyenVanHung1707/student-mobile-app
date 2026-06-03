@@ -19,6 +19,7 @@ import Icon from 'react-native-vector-icons/FontAwesome';
 import {getData, storeData, formatToView, convertTime, getThemeColors} from './Utility';
 import {useNavigation, useFocusEffect} from '@react-navigation/native';
 import ClassDocuments from './ClassDocuments';
+import ClassDiscussion from './ClassDiscussion';
 import Geolocation from 'react-native-geolocation-service';
 
 export default function ClassDetail() {
@@ -364,21 +365,7 @@ export default function ClassDetail() {
         <Text style={[styles.classInfoText, {color: theme.textSecondary}]}>Mô tả: {description}</Text>
       </View>
 
-      <View style={[styles.activeBar, {backgroundColor: theme.bg}]}>
-        <TouchableOpacity
-          style={[styles.addButton, {backgroundColor: theme.primary}]}
-          onPress={() => navigation.navigate('ClassDiscussion')}>
-          <Icon
-            name="comments"
-            size={16}
-            color="#FFFFFF"
-            style={{marginRight: 8}}
-          />
-          <Text style={styles.addButtonText}>Thảo luận lớp học</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Segmented Tab Bar */}
+      {/* Segmented Tab Bar - 4 tabs matching Web exactly */}
       <View style={[styles.tabContainer, {backgroundColor: theme.card, borderColor: theme.border}]}>
         <TouchableOpacity
           style={[
@@ -392,6 +379,20 @@ export default function ClassDetail() {
               activeTab === 'attendance' ? {color: '#FFFFFF'} : {color: theme.textSecondary},
             ]}>
             Nhật ký chuyên cần
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[
+            styles.tabButton,
+            activeTab === 'discussion' && {backgroundColor: theme.primary},
+          ]}
+          onPress={() => setActiveTab('discussion')}>
+          <Text
+            style={[
+              styles.tabButtonText,
+              activeTab === 'discussion' ? {color: '#FFFFFF'} : {color: theme.textSecondary},
+            ]}>
+            Thảo luận lớp học
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -424,15 +425,15 @@ export default function ClassDetail() {
               styles.tabButtonText,
               activeTab === 'document' ? {color: '#FFFFFF'} : {color: theme.textSecondary},
             ]}>
-            Tài liệu
+            Tài liệu lớp học
           </Text>
         </TouchableOpacity>
       </View>
 
       {activeTab === 'attendance' ? (
         <>
-          <View style={[styles.container, {backgroundColor: theme.bg}]}>
-            <Text style={[styles.text1, {color: theme.text}]}>Danh sách buổi điểm danh của bạn</Text>
+          <View style={[styles.container, {backgroundColor: theme.bg, height: 40, flex: 0, justifyContent: 'flex-start', paddingLeft: 16}]}>
+            <Text style={[styles.text1, {color: theme.text, fontSize: 16, position: 'relative'}]}>Danh sách buổi điểm danh của bạn</Text>
           </View>
           <View style={[styles.studentList, {backgroundColor: theme.bg}]}>
             <FlatList
@@ -463,10 +464,14 @@ export default function ClassDetail() {
             />
           </View>
         </>
+      ) : activeTab === 'discussion' ? (
+        <View style={{flex: 1, backgroundColor: theme.bg}}>
+          <ClassDiscussion />
+        </View>
       ) : activeTab === 'assessment' ? (
         <>
-          <View style={[styles.container, {backgroundColor: theme.bg}]}>
-            <Text style={[styles.text1, {color: theme.text}]}>Bài thi & Bài tập học phần</Text>
+          <View style={[styles.container, {backgroundColor: theme.bg, height: 40, flex: 0, justifyContent: 'flex-start', paddingLeft: 16}]}>
+            <Text style={[styles.text1, {color: theme.text, fontSize: 16, position: 'relative'}]}>Bài thi & Bài tập học phần</Text>
           </View>
           <View style={[styles.studentList, {backgroundColor: theme.bg}]}>
             {isAssessmentsLoading ? (

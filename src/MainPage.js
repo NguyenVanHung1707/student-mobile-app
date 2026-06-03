@@ -13,6 +13,7 @@ import ClassDiscussion from './ClassDiscussion';
 import GradesAndAttendance from './GradesAndAttendance';
 import TimetableScreen from './TimetableScreen'; // Import TimetableScreen
 import TakeAssessmentScreen from './TakeAssessmentScreen'; // Import TakeAssessmentScreen
+import ProfileScreen from './ProfileScreen'; // Import ProfileScreen
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -70,6 +71,8 @@ export default function MainPage() {
             iconName = 'bar-chart';
           } else if (route.name === 'FaceID') {
             iconName = 'camera';
+          } else if (route.name === 'Hồ sơ') {
+            iconName = 'user';
           }
 
           return <Icon name={iconName} size={focused ? size + 2 : size} color={color} />;
@@ -78,15 +81,16 @@ export default function MainPage() {
         tabBarInactiveTintColor: theme.textSecondary,
         tabBarLabelStyle: {
           fontWeight: '700',
-          fontSize: 11,
-          paddingBottom: 4,
+          fontSize: 9.5,
+          paddingBottom: 6,
         },
         tabBarStyle: {
           backgroundColor: theme.card,
           borderTopWidth: 1,
           borderTopColor: theme.border,
-          height: 62,
-          paddingTop: 6,
+          height: 68,
+          paddingTop: 8,
+          paddingBottom: 4,
           elevation: 10,
           shadowColor: '#000',
           shadowOffset: {width: 0, height: -3},
@@ -123,6 +127,7 @@ export default function MainPage() {
       <Tab.Screen name="Lịch học" component={TimetableScreen} options={{headerShown: false}} />
       <Tab.Screen name="Kết quả" component={GradesAndAttendance} />
       <Tab.Screen name="FaceID" component={UploadImageScreen} />
+      <Tab.Screen name="Hồ sơ" component={ProfileScreen} />
     </Tab.Navigator>
   );
 }

@@ -32,8 +32,8 @@ jest.mock('@react-navigation/native', () => {
 jest.mock(
   '@env',
   () => ({
-    HOST: 'https://thuvienso.io.vn',
-    API_URL: 'https://thuvienso.io.vn/api',
+    HOST: 'https://lophocso.io.vn',
+    API_URL: 'https://lophocso.io.vn/api',
   }),
   {virtual: true},
 );

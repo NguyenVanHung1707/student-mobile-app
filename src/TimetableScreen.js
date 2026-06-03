@@ -340,8 +340,8 @@ export default function TimetableScreen() {
                     style={[
                       styles.dayChipLabel,
                       {color: colors.textSecondary},
-                      isSelected && {color: '#ffffff'},
                       isToday && {color: colors.secondary},
+                      isSelected && {color: '#ffffff'},
                     ]}>
                     {day.label}
                   </Text>
@@ -349,8 +349,8 @@ export default function TimetableScreen() {
                     style={[
                       styles.dayChipDate,
                       {color: colors.textSecondary},
-                      isSelected && {color: '#e2e8f0'},
                       isToday && {color: colors.secondary},
+                      isSelected && {color: '#e2e8f0'},
                     ]}>
                     {formattedDate}
                   </Text>
